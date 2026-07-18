@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Inktone — S-4 Sketch Sampler</title>
+<meta name="description" content="Sketch a sound. Ink color, stroke shape and speed become a synthesis prompt played on a six-pad sampler.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><rect width='16' height='16' rx='4' fill='%231c1d20'/></svg>">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+<main class="device" id="device">
+
+  <header class="masthead">
+    <div class="masthead-dot"></div>
+    <div class="masthead-name">INKTONE</div>
+    <div class="masthead-sub">S-4 SKETCH SAMPLER</div>
+    <div class="masthead-tag">SFX·11L</div>
+  </header>
+
+  <section class="paper-card">
+    <div class="paper-wrap">
+      <canvas id="paper"></canvas>
+      <div class="paper-empty" id="paperEmpty">
+        <div>[ SKETCH A SOUND ]<br>shape·speed·ink become the prompt</div>
+      </div>
+    </div>
+    <div class="ink-row">
+      <div class="ink-swatches" id="inkSwatches"></div>
+      <div class="ink-hint" id="inkHint"></div>
+      <button class="chip" id="undoBtn">UNDO</button>
+      <button class="chip" id="clrBtn">CLR</button>
+    </div>
+  </section>
+
+  <section class="prompt-row">
+    <div class="prompt-lcd">
+      <div class="prompt-label">PROMPT</div>
+      <div class="prompt-text"><span id="lcdText"></span><span class="cursor"></span></div>
+    </div>
+    <button class="gen-btn" id="genBtn">GENERATE</button>
+  </section>
+
+  <section class="pad-grid" id="padGrid"></section>
+
+  <section class="control-strip">
+    <div class="sel-name" id="selName">NO PAD</div>
+    <div class="fader-group">
+      <div class="fader-label">PITCH</div>
+      <div class="fader" id="fader">
+        <div class="fader-track"></div>
+        <div class="fader-center"></div>
+        <div class="fader-knob" id="faderKnob"></div>
+      </div>
+      <div class="fader-value" id="pitchLabel">—</div>
+    </div>
+    <button class="chip chip-toggle" id="loopBtn">LOOP</button>
+    <button class="chip" id="delBtn">DEL</button>
+  </section>
+
+</main>
+
+<script src="app.js"></script>
+</body>
+</html>
