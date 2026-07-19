@@ -26,9 +26,8 @@ hosting and CDN.
 - [x] Vercel project `inktone` created; production deployment live at
       https://inktone-lemon.vercel.app (framework: none / static — Vercel serves
       `index.html` from the root; no build command, no output dir, no env vars)
-- [ ] Link the GitHub repo to the Vercel project (Vercel dashboard → Project →
-      Settings → Git) so pushes auto-deploy: PRs get preview URLs, `main` goes
-      to production
+- [x] GitHub repo linked to the Vercel project — pushes auto-deploy: PRs get
+      preview URLs, `main` goes to production
 
 ### 3. Verification checklist (per deploy)
 
