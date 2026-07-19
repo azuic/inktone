@@ -19,14 +19,13 @@ hosting and CDN.
 ### 1. Repository
 
 - [x] `git init`, initial commit with app + docs
-- [ ] Create GitHub repo `inktone` (public) and push `main`
-      (`gh repo create inktone --public --source . --push`)
+- [x] GitHub repo created and `main` pushed: https://github.com/azuic/inktone
 
 ### 2. Vercel project
 
-- [x] Create Vercel project `inktone` and make the first deployment
-      (framework: none / static — Vercel serves `index.html` from the root;
-      no build command, no output directory, no env vars needed)
+- [x] Vercel project `inktone` created; production deployment live at
+      https://inktone-lemon.vercel.app (framework: none / static — Vercel serves
+      `index.html` from the root; no build command, no output dir, no env vars)
 - [ ] Link the GitHub repo to the Vercel project (Vercel dashboard → Project →
       Settings → Git) so pushes auto-deploy: PRs get preview URLs, `main` goes
       to production
