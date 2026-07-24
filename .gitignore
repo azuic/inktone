@@ -1,0 +1,16 @@
+# Vercel
+.vercel
+
+# Local env files — never commit secrets
+.env
+.env.local
+.env*.local
+
+# Agent skill tooling (installed via `npx skills add`, not app source)
+.agents/
+
+# Claude Code local settings and skill symlinks (machine-specific, not shared)
+.claude/
+
+# OS
+.DS_Store

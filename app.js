@@ -18,7 +18,8 @@ const ctx = canvas.getContext('2d');
 const state = {
   ink: 'black',
   generating: false,
-  pads: Array(SLOTS).fill(null), // {params, prompt, thumb, color, pitch, loop}
+  aiMode: true,                  // true: try ElevenLabs Music API, fall back to local synth
+  pads: Array(SLOTS).fill(null), // {params, prompt, thumb, color, pitch, loop, buffer}
   sel: -1,
   looping: {},                   // slot -> true while loop interval runs
 };
@@ -181,9 +182,23 @@ function play(i) {
   const pad = state.pads[i];
   if (!pad) return;
   const a = ac();
+  const semi = Math.pow(2, pad.pitch / 12);
+
+  if (pad.buffer) {
+    // AI-generated audio: play the (already trimmed) buffer at the pitched rate.
+    const src = a.createBufferSource();
+    src.buffer = pad.buffer;
+    src.playbackRate.value = semi;
+    const out = a.createGain();
+    out.gain.value = 0.9;
+    src.connect(out).connect(a.destination);
+    src.start();
+    flashPad(i, Math.min(600, (pad.buffer.duration * 1000) / semi));
+    return;
+  }
+
   const f = pad.params;
   const t = a.currentTime;
-  const semi = Math.pow(2, pad.pitch / 12);
   const fr = f.freq * semi;
   const dur = f.dur;
   const out = a.createGain();
@@ -299,7 +314,49 @@ function setLcd(text) {
   $('lcdText').textContent = text;
 }
 
-function generate() {
+function wait(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
+// Requests a clip from the ElevenLabs Music API (via our /api/generate-sound
+// proxy, which holds the key server-side) and trims it down to the sketch's
+// target duration — the API's floor is 3s, well above a sampler hit.
+async function fetchAiBuffer(prompt, targetDurSec) {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), 45000);
+  try {
+    const resp = await fetch('/api/generate-sound', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ prompt }),
+      signal: controller.signal,
+    });
+    if (!resp.ok) throw new Error(`generation failed: ${resp.status}`);
+    const arrBuf = await resp.arrayBuffer();
+    const decoded = await ac().decodeAudioData(arrBuf);
+    return trimBuffer(decoded, targetDurSec);
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+function trimBuffer(buffer, targetDurSec) {
+  const a = ac();
+  const targetLen = Math.max(1, Math.min(buffer.length, Math.round(targetDurSec * buffer.sampleRate)));
+  const out = a.createBuffer(buffer.numberOfChannels, targetLen, buffer.sampleRate);
+  const fadeLen = Math.min(targetLen, Math.round(0.03 * buffer.sampleRate)); // 30ms fade-out
+  for (let ch = 0; ch < buffer.numberOfChannels; ch++) {
+    const src = buffer.getChannelData(ch);
+    const dst = out.getChannelData(ch);
+    for (let i = 0; i < targetLen; i++) {
+      const fadeMul = i > targetLen - fadeLen ? (targetLen - i) / fadeLen : 1;
+      dst[i] = src[i] * fadeMul;
+    }
+  }
+  return out;
+}
+
+async function generate() {
   if (state.generating) return;
   if (!strokes.length) {
     setLcd('nothing sketched — draw first');
@@ -313,27 +370,42 @@ function generate() {
   $('genBtn').classList.add('waiting');
   $('genBtn').textContent = 'WAIT';
   setLcd('reading sketch');
-  setTimeout(() => setLcd('> sending prompt to sfx model'), 450);
-  setTimeout(() => setLcd('> rendering audio'), 1000);
-  setTimeout(() => {
-    let slot = state.pads.indexOf(null);
-    if (slot < 0) slot = state.sel >= 0 ? state.sel : 0;
-    if (state.looping[slot]) stopLoop(slot);
-    state.pads[slot] = { params: f, prompt, thumb: th, color: f.color, pitch: 0, loop: false };
-    state.generating = false;
-    state.sel = slot;
-    $('genBtn').classList.remove('waiting');
-    $('genBtn').textContent = 'GENERATE';
-    setLcd(prompt);
-    device.classList.remove('flash');
-    void device.offsetWidth;
-    device.classList.add('flash');
-    setTimeout(() => device.classList.remove('flash'), 350);
-    strokes = [];
-    redraw();
-    render();
-    play(slot);
-  }, 1600);
+  await wait(300);
+
+  let buffer = null;
+  if (state.aiMode) {
+    setLcd('> sending prompt to sfx model');
+    try {
+      buffer = await fetchAiBuffer(prompt, f.dur);
+      setLcd('> rendering audio');
+      await wait(150);
+    } catch (err) {
+      console.warn('AI generation failed, falling back to local synth:', err);
+      setLcd('AI unavailable — local synth');
+      await wait(500);
+    }
+  } else {
+    setLcd('> rendering audio');
+    await wait(700);
+  }
+
+  let slot = state.pads.indexOf(null);
+  if (slot < 0) slot = state.sel >= 0 ? state.sel : 0;
+  if (state.looping[slot]) stopLoop(slot);
+  state.pads[slot] = { params: f, prompt, thumb: th, color: f.color, pitch: 0, loop: false, buffer };
+  state.generating = false;
+  state.sel = slot;
+  $('genBtn').classList.remove('waiting');
+  $('genBtn').textContent = 'GENERATE';
+  setLcd(prompt);
+  device.classList.remove('flash');
+  void device.offsetWidth;
+  device.classList.add('flash');
+  setTimeout(() => device.classList.remove('flash'), 350);
+  strokes = [];
+  redraw();
+  render();
+  play(slot);
 }
 
 /* ---- pads ---- */
@@ -430,6 +502,11 @@ $('clrBtn').addEventListener('click', () => {
 
 $('genBtn').addEventListener('click', generate);
 
+$('aiBtn').addEventListener('click', () => {
+  state.aiMode = !state.aiMode;
+  render();
+});
+
 // keyboard: 1–6 trigger pads
 document.addEventListener('keydown', (e) => {
   const k = parseInt(e.key, 10);
@@ -486,6 +563,7 @@ function renderPaperEmpty() {
 function render() {
   for (const ink of INKS) ink.el.classList.toggle('selected', ink.key === state.ink);
   $('inkHint').textContent = INKS.find((i) => i.key === state.ink).word.toUpperCase();
+  $('aiBtn').classList.toggle('on', state.aiMode);
 
   for (let i = 0; i < SLOTS; i++) {
     const p = state.pads[i];

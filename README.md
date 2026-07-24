@@ -5,9 +5,11 @@ sketch — its color, position, length, speed, and jaggedness — into a synthes
 sound on a six-pad sampler. Pitch it, loop it, play a beat.
 
 **The drawing is the prompt**: every sketch compiles to a line like
-`fluttering jagged, gritty metallic impact, bright airy character, 0.8s` — the
-string a production build would send to a text-to-sound-effects API. This build
-renders it locally with the Web Audio API, so there is no backend and no keys.
+`fluttering jagged, gritty metallic impact, bright airy character, 0.8s`, sent
+to the [ElevenLabs Music API](https://elevenlabs.io/docs/api-reference/music)
+via a small serverless function that keeps the API key server-side. If AI
+generation is off, unavailable, or fails, Inktone falls back instantly to a
+local Web Audio synth — no backend, no keys, no network.
 
 ## Mapping
 
@@ -18,13 +20,23 @@ renders it locally with the Web Audio API, so there is no backend and no keys.
 
 ## Run locally
 
-It's a static site with no build step:
+Frontend only, no AI (local synth always used):
 
 ```sh
 npx serve .
 ```
 
-Keys `1`–`6` trigger pads.
+Frontend + `/api/generate-sound` (requires the [Vercel CLI](https://vercel.com/docs/cli)
+and a linked project):
+
+```sh
+npm i -g vercel
+vercel link
+cp .env.example .env.local   # fill in ELEVENLABS_API_KEY
+vercel dev
+```
+
+Keys `1`–`6` trigger pads. The **AI** chip toggles ElevenLabs generation on/off.
 
 ## Docs
 
@@ -33,4 +45,6 @@ Keys `1`–`6` trigger pads.
 
 ## Stack
 
-Vanilla HTML/CSS/JS, Web Audio API, IBM Plex Mono. Deployed on Vercel.
+Vanilla HTML/CSS/JS, Web Audio API, IBM Plex Mono, one Vercel serverless
+function (`api/generate-sound.js`, zero dependencies) calling the ElevenLabs
+Music API. Deployed on Vercel.
