@@ -1,6 +1,6 @@
-# Inktone — S-4 Sketch Sampler
+# Tink-on — S-4 Sketch Sampler
 
-Sketch a sound. Draw on the paper with one of four inks and Inktone translates the
+Sketch a sound. Draw on the paper with one of four inks and Tink-on translates the
 sketch — its color, position, length, speed, and jaggedness — into a synthesized
 sound on a six-pad sampler. Pitch it, loop it, play a beat.
 
@@ -8,7 +8,7 @@ sound on a six-pad sampler. Pitch it, loop it, play a beat.
 `fluttering jagged, gritty metallic impact, bright airy character, 0.8s`, sent
 to the [ElevenLabs Sound Effects API](https://elevenlabs.io/docs/api-reference/text-to-sound-effects)
 via a small serverless function that keeps the API key server-side. If AI
-generation is off, unavailable, or fails, Inktone falls back instantly to a
+generation is off, unavailable, or fails, Tink-on falls back instantly to a
 local Web Audio synth — no backend, no keys, no network.
 
 ## Mapping

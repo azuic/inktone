@@ -1,8 +1,8 @@
-# Inktone — S-4 Sketch Sampler
+# Tink-on — S-4 Sketch Sampler
 
 ## Product overview
 
-Inktone is a sketch-to-sound sampler. The user draws on a small sheet of "paper" with
+Tink-on is a sketch-to-sound sampler. The user draws on a small sheet of "paper" with
 colored inks; the app reads the sketch — its color, position, length, speed, and
 jaggedness — and translates it into a synthesized sound that lands on one of six
 sampler pads. Pads can be retriggered, pitched, looped, and layered into a beat.
@@ -95,7 +95,7 @@ Music's 3s floor.
   0.5s need the response trimmed afterward — `trimBuffer` in `app.js` cuts it
   down with a 30ms fade-out; everything else plays back close to full length.
 - The **AI** chip in the ink row toggles generation on/off. On (default): tap
-  GENERATE and Inktone requests real audio; on failure (no key configured,
+  GENERATE and Tink-on requests real audio; on failure (no key configured,
   rate limit, network error, timeout) it logs a warning and falls back to the
   local synth automatically, with the LCD noting the fallback. Off: skips the
   network call entirely and always uses the instant, free local synth.
@@ -104,7 +104,7 @@ Music's 3s floor.
   synth path), and loops the same way — `setInterval` retriggering `play()`
   at the pad's duration. (The API has a native `loop` flag for seamless loop
   generation; not wired up yet because it's fixed at generation time while
-  Inktone's LOOP toggle is a post-hoc per-pad choice, and forcing it on for
+  Tink-on's LOOP toggle is a post-hoc per-pad choice, and forcing it on for
   every clip would soften percussive hits like the red "impact" family.)
 
 This is a paid ElevenLabs feature and each AI generation is a billed request;

@@ -1,10 +1,14 @@
-# Deployment plan — Inktone
+# Deployment plan — Tink-on
 
 ## Overview
 
-Inktone is a static frontend plus one Vercel serverless function (no npm
+Tink-on is a static frontend plus one Vercel serverless function (no npm
 dependencies, no build step), which keeps the deployment story minimal:
 GitHub for source of truth, Vercel for hosting, CDN, and the function runtime.
+
+> The app was renamed from "Inktone" to "Tink-on" in-product only. The GitHub
+> repo (`azuic/inktone`) and Vercel project/domain (`inktone-lemon.vercel.app`)
+> were intentionally left unchanged to avoid breaking the live URL.
 
 ## Targets
 
