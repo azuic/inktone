@@ -318,9 +318,10 @@ function wait(ms) {
   return new Promise((resolve) => setTimeout(resolve, ms));
 }
 
-// Requests a clip from the ElevenLabs Music API (via our /api/generate-sound
-// proxy, which holds the key server-side) and trims it down to the sketch's
-// target duration — the API's floor is 3s, well above a sampler hit.
+// Requests a clip from the ElevenLabs Sound Effects API (via our
+// /api/generate-sound proxy, which holds the key server-side), targeting the
+// sketch's exact duration — the API accepts 0.5-30s, so only sketches under
+// 0.5s need the returned audio trimmed down afterward.
 async function fetchAiBuffer(prompt, targetDurSec) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), 45000);
@@ -328,13 +329,13 @@ async function fetchAiBuffer(prompt, targetDurSec) {
     const resp = await fetch('/api/generate-sound', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ prompt }),
+      body: JSON.stringify({ prompt, durationSec: targetDurSec }),
       signal: controller.signal,
     });
     if (!resp.ok) throw new Error(`generation failed: ${resp.status}`);
     const arrBuf = await resp.arrayBuffer();
     const decoded = await ac().decodeAudioData(arrBuf);
-    return trimBuffer(decoded, targetDurSec);
+    return targetDurSec < decoded.duration ? trimBuffer(decoded, targetDurSec) : decoded;
   } finally {
     clearTimeout(timer);
   }

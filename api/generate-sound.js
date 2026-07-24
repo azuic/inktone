@@ -1,11 +1,12 @@
-// Serverless function: proxies sketch prompts to the ElevenLabs Music API.
+// Serverless function: proxies sketch prompts to the ElevenLabs Sound Effects API.
 // Keeps ELEVENLABS_API_KEY server-side only — never shipped to the client.
 //
-// ElevenLabs music.compose has a 3,000ms minimum duration, shorter than a
-// sampler hit (250-1600ms), so we always request the minimum here and let
-// the client trim the returned audio down to the sketch's target length.
+// This endpoint natively supports 0.5-30s clips, which covers a sampler hit's
+// 250-1600ms range almost exactly (only sketches under 0.5s need clamping),
+// unlike the Music API's 3s floor.
 
-const MIN_MUSIC_LENGTH_MS = 3000;
+const MIN_DURATION_SEC = 0.5;
+const MAX_DURATION_SEC = 30;
 const MAX_PROMPT_LEN = 2000;
 
 module.exports = async (req, res) => {
@@ -36,22 +37,24 @@ module.exports = async (req, res) => {
     return;
   }
 
+  const rawDur = typeof body?.durationSec === 'number' ? body.durationSec : null;
+  const durationSeconds = rawDur == null ? null : Math.min(MAX_DURATION_SEC, Math.max(MIN_DURATION_SEC, rawDur));
+
   const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), 60000);
+  const timeout = setTimeout(() => controller.abort(), 45000);
 
   let upstream;
   try {
-    upstream = await fetch('https://api.elevenlabs.io/v1/music?output_format=auto', {
+    upstream = await fetch('https://api.elevenlabs.io/v1/sound-generation?output_format=mp3_44100_128', {
       method: 'POST',
       headers: {
         'xi-api-key': apiKey,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
-        prompt,
-        music_length_ms: MIN_MUSIC_LENGTH_MS,
-        model_id: 'music_v2',
-        force_instrumental: true,
+        text: prompt,
+        duration_seconds: durationSeconds,
+        model_id: 'eleven_text_to_sound_v2',
       }),
       signal: controller.signal,
     });

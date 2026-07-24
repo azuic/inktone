@@ -6,7 +6,7 @@ sound on a six-pad sampler. Pitch it, loop it, play a beat.
 
 **The drawing is the prompt**: every sketch compiles to a line like
 `fluttering jagged, gritty metallic impact, bright airy character, 0.8s`, sent
-to the [ElevenLabs Music API](https://elevenlabs.io/docs/api-reference/music)
+to the [ElevenLabs Sound Effects API](https://elevenlabs.io/docs/api-reference/text-to-sound-effects)
 via a small serverless function that keeps the API key server-side. If AI
 generation is off, unavailable, or fails, Inktone falls back instantly to a
 local Web Audio synth — no backend, no keys, no network.
@@ -47,4 +47,4 @@ Keys `1`–`6` trigger pads. The **AI** chip toggles ElevenLabs generation on/of
 
 Vanilla HTML/CSS/JS, Web Audio API, IBM Plex Mono, one Vercel serverless
 function (`api/generate-sound.js`, zero dependencies) calling the ElevenLabs
-Music API. Deployed on Vercel.
+Sound Effects API. Deployed on Vercel.

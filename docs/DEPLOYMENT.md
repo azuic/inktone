@@ -30,11 +30,11 @@ GitHub for source of truth, Vercel for hosting, CDN, and the function runtime.
 - [x] GitHub repo linked to the Vercel project — pushes auto-deploy: PRs get
       preview URLs, `main` goes to production
 
-### 3. ElevenLabs Music API integration
+### 3. ElevenLabs Sound Effects API integration
 
 - [x] `api/generate-sound.js` added — Node serverless function, proxies to
-      `POST https://api.elevenlabs.io/v1/music`, reads `ELEVENLABS_API_KEY`
-      from `process.env` (server-side only)
+      `POST https://api.elevenlabs.io/v1/sound-generation`, reads
+      `ELEVENLABS_API_KEY` from `process.env` (server-side only)
 - [ ] **Add `ELEVENLABS_API_KEY` in the Vercel dashboard** — Project `inktone`
       → Settings → Environment Variables → add for **Production** and
       **Preview** (get a key at https://elevenlabs.io/app/settings/api-keys;
