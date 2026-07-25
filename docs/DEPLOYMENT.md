@@ -62,6 +62,16 @@ GitHub for source of truth, Vercel for hosting, CDN, and the function runtime.
 - Pads play/pitch/delete correctly
 - SEQ: toggling steps works, PLAY starts a sample-accurate loop with a moving
   playhead, STOP halts cleanly with no stray playhead highlight left behind
+- Ink swatches, UNDO/CLR/AI, and the prompt row are all visible (regression
+  check — a flexbox shrink bug hid the whole ink row once)
+- Overlapping strokes of two different inks show a visibly different third
+  color where they cross (multiply blend), not just one drawn over the other
+- A generated pad shows a crisp geometric riso-shape thumbnail, not a blurry
+  photo of the sketch
+- Mobile portrait shows the "ROTATE TO LANDSCAPE" hint, not the device;
+  mobile landscape and desktop both show the two-pane device directly
+- Each pane (sketch, pads) scrolls independently if its content is taller
+  than the device
 - Device panel scrolls internally (not clipped) when content exceeds one screen
 - Layout correct at 390px (phone) and desktop widths
 

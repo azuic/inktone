@@ -1,13 +1,21 @@
 'use strict';
 
+// Risograph ink colors — flat, saturated hues close to real Riso ink swatches.
+// Strokes are drawn with a multiply blend (see drawStroke), so overlapping
+// inks mix into a third color the way overlapping riso passes do on paper.
 const INKS = [
-  { key: 'black', hex: '#1c1d20', word: 'deep sub drone', tag: 'SUB' },
-  { key: 'red', hex: '#a83f38', word: 'metallic impact', tag: 'IMPACT' },
-  { key: 'blue', hex: '#33549c', word: 'resonant tone', tag: 'TONE' },
-  { key: 'ochre', hex: '#95782e', word: 'grainy texture', tag: 'TEXTR' },
+  { key: 'black', hex: '#0D0D0D', word: 'deep sub drone', tag: 'SUB' },
+  { key: 'red', hex: '#F0523D', word: 'metallic impact', tag: 'IMPACT' },
+  { key: 'blue', hex: '#0078BF', word: 'resonant tone', tag: 'TONE' },
+  { key: 'ochre', hex: '#D9A429', word: 'grainy texture', tag: 'TEXTR' },
 ];
 
-const PAPER_H = 272;
+const PAPER_HEX = '#F2E9D8';
+const PAPER_GRID_HEX = '#D8CDB0';
+const STROKE_WIDTH = 12;
+const STROKE_ALPHA = 0.92;
+
+const PAPER_H = 224;
 const SLOTS = 6;
 
 const $ = (id) => document.getElementById(id);
@@ -39,22 +47,30 @@ function sizeCanvas() {
 
 function drawGrid() {
   const w = canvas.width / (devicePixelRatio || 1);
-  ctx.fillStyle = '#f4f5f7';
+  ctx.globalCompositeOperation = 'source-over';
+  ctx.globalAlpha = 1;
+  ctx.fillStyle = PAPER_HEX;
   ctx.fillRect(0, 0, w, PAPER_H);
-  ctx.fillStyle = '#c4c8cf';
+  ctx.fillStyle = PAPER_GRID_HEX;
   for (let x = 14; x < w; x += 18)
     for (let y = 14; y < PAPER_H; y += 18)
       ctx.fillRect(x, y, 1.5, 1.5);
 }
 
+// Multiply blend + <1 alpha approximates how riso ink lays down: solid over
+// paper, but a visibly different third color where two inks overlap.
 function drawStroke(s) {
+  ctx.globalCompositeOperation = 'multiply';
+  ctx.globalAlpha = STROKE_ALPHA;
   ctx.strokeStyle = INKS.find((i) => i.key === s.color).hex;
-  ctx.lineWidth = 3;
+  ctx.lineWidth = STROKE_WIDTH;
   ctx.lineCap = 'round';
   ctx.lineJoin = 'round';
   ctx.beginPath();
   s.pts.forEach((p, i) => (i ? ctx.lineTo(p.x, p.y) : ctx.moveTo(p.x, p.y)));
   ctx.stroke();
+  ctx.globalCompositeOperation = 'source-over';
+  ctx.globalAlpha = 1;
 }
 
 function redraw() {
@@ -79,18 +95,28 @@ canvas.addEventListener('pointermove', (e) => {
   const l = pts[pts.length - 1];
   if (Math.hypot(p.x - l.x, p.y - l.y) < 2) return;
   pts.push(p);
+  ctx.globalCompositeOperation = 'multiply';
+  ctx.globalAlpha = STROKE_ALPHA;
   ctx.strokeStyle = INKS.find((i) => i.key === cur.color).hex;
-  ctx.lineWidth = 3;
+  ctx.lineWidth = STROKE_WIDTH;
   ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
   ctx.beginPath();
   ctx.moveTo(l.x, l.y);
   ctx.lineTo(p.x, p.y);
   ctx.stroke();
+  ctx.globalCompositeOperation = 'source-over';
+  ctx.globalAlpha = 1;
 });
 function penUp() {
   if (!cur) return;
   if (cur.pts.length > 1) strokes.push(cur);
   cur = null;
+  // The live preview draws overlapping short multiply-blended segments as
+  // the pointer moves, which self-darkens near-adjacent round caps well
+  // beyond one clean pass. Redraw from the stroke history so the finished
+  // stroke composites as a single multiply pass, same as after undo/clear.
+  redraw();
   renderPaperEmpty();
 }
 canvas.addEventListener('pointerup', penUp);
@@ -146,12 +172,129 @@ function promptFor(f) {
   return `${sp} ${jg} ${ink.word}, ${hi} character, ${f.dur.toFixed(1)}s`;
 }
 
-function thumb() {
+/* ---- pad art ----
+ * Pad thumbnails are generative riso-style geometry (2-3 overlapping shapes,
+ * multiply-blended) rather than a snapshot of the canvas — a downscaled
+ * photo of a thin sketch line reads as a blurry smear at pad size, while a
+ * few bold flat shapes stay crisp and match the ink's riso palette.
+ */
+
+function mulberry32(seed) {
+  return function () {
+    seed |= 0;
+    seed = (seed + 0x6d2b79f5) | 0;
+    let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
+    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+function hexToHsl(hex) {
+  const n = parseInt(hex.slice(1), 16);
+  const r = ((n >> 16) & 255) / 255, g = ((n >> 8) & 255) / 255, b = (n & 255) / 255;
+  const max = Math.max(r, g, b), min = Math.min(r, g, b);
+  let h = 0, s = 0;
+  const l = (max + min) / 2;
+  const d = max - min;
+  if (d) {
+    s = d / (1 - Math.abs(2 * l - 1));
+    if (max === r) h = ((g - b) / d) % 6;
+    else if (max === g) h = (b - r) / d + 2;
+    else h = (r - g) / d + 4;
+    h *= 60;
+    if (h < 0) h += 360;
+  }
+  return [h, s, l];
+}
+
+function hslToHex(h, s, l) {
+  const c = (1 - Math.abs(2 * l - 1)) * s;
+  const x = c * (1 - Math.abs(((h / 60) % 2) - 1));
+  const m = l - c / 2;
+  let [r, g, b] = h < 60 ? [c, x, 0] : h < 120 ? [x, c, 0] : h < 180 ? [0, c, x] : h < 240 ? [0, x, c] : h < 300 ? [x, 0, c] : [c, 0, x];
+  const to255 = (v) => Math.round((v + m) * 255).toString(16).padStart(2, '0');
+  return `#${to255(r)}${to255(g)}${to255(b)}`;
+}
+
+function riffColor(hex, hueShift, satMul, lightMul) {
+  const [h, s, l] = hexToHsl(hex);
+  return hslToHex((h + hueShift + 360) % 360, Math.min(1, s * satMul), Math.min(0.92, Math.max(0.15, l * lightMul)));
+}
+
+function shapeCircle(g, cx, cy, r) {
+  g.beginPath();
+  g.arc(cx, cy, r, 0, Math.PI * 2);
+  g.fill();
+}
+function shapeTriangle(g, cx, cy, r, rot) {
+  g.beginPath();
+  for (let i = 0; i < 3; i++) {
+    const a = rot + (i / 3) * Math.PI * 2;
+    const x = cx + Math.cos(a) * r, y = cy + Math.sin(a) * r;
+    i ? g.lineTo(x, y) : g.moveTo(x, y);
+  }
+  g.closePath();
+  g.fill();
+}
+function shapeRing(g, cx, cy, r) {
+  g.lineWidth = r * 0.55;
+  g.beginPath();
+  g.arc(cx, cy, r * 0.7, 0, Math.PI * 2);
+  g.stroke();
+}
+function shapeStar(g, cx, cy, r, rot) {
+  const points = 6;
+  g.beginPath();
+  for (let i = 0; i < points * 2; i++) {
+    const a = rot + (i / (points * 2)) * Math.PI * 2;
+    const rr = i % 2 ? r * 0.45 : r;
+    const x = cx + Math.cos(a) * rr, y = cy + Math.sin(a) * rr;
+    i ? g.lineTo(x, y) : g.moveTo(x, y);
+  }
+  g.closePath();
+  g.fill();
+}
+function shapeSemicircle(g, cx, cy, r, rot) {
+  g.beginPath();
+  g.moveTo(cx, cy);
+  g.arc(cx, cy, r, rot, rot + Math.PI);
+  g.closePath();
+  g.fill();
+}
+
+const THUMB_SHAPES = [shapeCircle, shapeTriangle, shapeRing, shapeStar, shapeSemicircle];
+
+function makeThumb(f) {
+  const size = 160;
   const t = document.createElement('canvas');
-  t.width = 120;
-  t.height = Math.round((120 * PAPER_H) / canvas.getBoundingClientRect().width);
-  t.getContext('2d').drawImage(canvas, 0, 0, t.width, t.height);
-  return t.toDataURL('image/jpeg', 0.7);
+  t.width = size;
+  t.height = size;
+  const g = t.getContext('2d');
+  g.fillStyle = PAPER_HEX;
+  g.fillRect(0, 0, size, size);
+
+  const seed = Math.floor(f.jag * 9973) ^ Math.floor(f.dur * 7919) ^ Math.floor(f.freq * 31) ^ Math.floor(f.rate * 6151);
+  const rng = mulberry32(seed);
+  const base = INKS.find((i) => i.key === f.color).hex;
+  const palette = [
+    base,
+    riffColor(base, 35 + rng() * 55, 0.95, 1.12),
+    riffColor(base, -(50 + rng() * 60), 0.9, 0.9),
+  ];
+
+  g.globalCompositeOperation = 'multiply';
+  const n = 2 + Math.floor(rng() * 2);
+  for (let i = 0; i < n; i++) {
+    const fn = THUMB_SHAPES[Math.floor(rng() * THUMB_SHAPES.length)];
+    g.fillStyle = g.strokeStyle = palette[Math.floor(rng() * palette.length)];
+    const cx = size * 0.5 + (rng() - 0.5) * size * 0.55;
+    const cy = size * 0.5 + (rng() - 0.5) * size * 0.55;
+    const r = size * (0.3 + rng() * 0.32);
+    fn(g, cx, cy, r, rng() * Math.PI * 2);
+  }
+  g.globalCompositeOperation = 'source-over';
+
+  return t.toDataURL('image/png');
 }
 
 /* ---- audio engine ---- */
@@ -374,7 +517,7 @@ async function generate() {
   ac(); // resume audio inside the user gesture
   const f = analyze();
   const prompt = promptFor(f);
-  const th = thumb();
+  const th = makeThumb(f);
   state.generating = true;
   $('genBtn').classList.add('waiting');
   $('genBtn').textContent = 'WAIT';

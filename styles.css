@@ -1,7 +1,8 @@
 :root {
   --ink: #1c1d20;
   --chassis: #eceef0;
-  --paper: #f4f5f7;
+  --paper: #F2E9D8;
+  --paper-grid: #D8CDB0;
   --page: #dfe0e2;
   --muted: #676b72;
   --faint: #a3a7ae;
@@ -29,27 +30,24 @@ body {
 
 @keyframes einkflash { 0%, 55% { filter: invert(1); } 100% { filter: invert(0); } }
 @keyframes blinkcur { 0%, 49% { opacity: 1; } 50%, 100% { opacity: 0; } }
+@keyframes rotatehint { 0%, 20% { transform: rotate(0deg); } 50%, 70% { transform: rotate(90deg); } 100% { transform: rotate(90deg); } }
+
+/* ---- device shell: landscape shape, played sideways on a phone ---- */
 
 .device {
   display: flex;
   flex-direction: column;
   width: 100%;
-  max-width: 393px;
   height: 100%;
-  max-height: 852px;
+  max-width: 900px;
+  max-height: 480px;
   background: var(--chassis);
-  overflow-y: auto;
-  overflow-x: hidden;
-  -webkit-overflow-scrolling: touch;
+  overflow: hidden;
 }
-/* Every section keeps its natural size — without this, flexbox's default
-   shrink-to-fit squeezes sections (clipping content, e.g. paper-card's
-   overflow:hidden hiding the ink row) instead of the device scrolling. */
-.device > * { flex: none; }
 
-@media (min-width: 440px) and (min-height: 700px) {
+@media (min-width: 900px) {
   .device {
-    height: min(852px, calc(100vh - 48px));
+    height: min(480px, calc(100vh - 48px));
     border: 1px solid var(--hairline);
     border-radius: 24px;
     box-shadow: 0 24px 60px rgba(28, 29, 32, .18);
@@ -58,19 +56,83 @@ body {
 
 .device.flash { animation: einkflash .35s step-end; }
 
+/* Portrait phones can't show the two-pane layout usefully — ask for a
+   rotate instead of cramming it in. Gated to narrow viewports so a tall
+   desktop window doesn't get mistaken for a phone. */
+.rotate-hint { display: none; }
+@media (orientation: portrait) and (max-width: 899px) {
+  .device { display: none; }
+  .rotate-hint {
+    display: flex;
+    position: fixed;
+    inset: 0;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 18px;
+    background: var(--page);
+    color: var(--ink);
+    text-align: center;
+    padding: 24px;
+  }
+}
+.rotate-phone {
+  width: 34px;
+  height: 56px;
+  border: 2px solid var(--ink);
+  border-radius: 8px;
+  position: relative;
+  animation: rotatehint 1.8s ease-in-out infinite;
+}
+.rotate-phone::after {
+  content: '';
+  position: absolute;
+  left: 50%;
+  bottom: 6px;
+  width: 4px;
+  height: 4px;
+  margin-left: -2px;
+  background: var(--ink);
+  border-radius: 50%;
+}
+.rotate-text {
+  font: 600 11px var(--mono);
+  letter-spacing: 1.5px;
+  line-height: 1.9;
+}
+
 /* ---- masthead ---- */
 
 .masthead {
+  flex: none;
   display: flex;
   align-items: baseline;
   gap: 8px;
-  padding: 14px 16px 10px;
+  padding: 10px 16px;
   border-bottom: 1px solid var(--hairline);
 }
 .masthead-dot { width: 9px; height: 9px; background: var(--ink); border-radius: 3px; align-self: center; }
 .masthead-name { font: 700 13px var(--mono); letter-spacing: 2px; }
 .masthead-sub { font: 400 9px var(--mono); letter-spacing: 1px; color: var(--muted); }
 .masthead-tag { margin-left: auto; font: 400 9px var(--mono); letter-spacing: 1px; color: var(--muted); }
+
+/* ---- two-pane layout ---- */
+
+.layout {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: row;
+}
+.pane {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.pane-sketch { border-right: 1px solid var(--hairline); }
+.pane-pads { flex: 1.15; }
 
 /* ---- paper ---- */
 
@@ -84,7 +146,7 @@ body {
 #paper {
   display: block;
   width: 100%;
-  height: 272px;
+  height: 224px;
   background: var(--paper);
   touch-action: none;
   cursor: crosshair;
@@ -99,7 +161,7 @@ body {
 }
 .paper-empty > div {
   font: 400 10.5px var(--mono);
-  color: #878b93;
+  color: #96876a;
   letter-spacing: 1px;
   text-align: center;
   line-height: 1.9;
@@ -154,7 +216,7 @@ body {
 
 .prompt-row {
   display: flex;
-  margin: 12px 14px 0;
+  margin: 12px 14px 14px;
   border: 1px solid var(--hairline);
   border-radius: 12px;
   overflow: hidden;
@@ -206,9 +268,9 @@ body {
 .pad-grid {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  grid-auto-rows: 108px;
+  grid-auto-rows: 84px;
   gap: 10px;
-  margin: 12px 14px;
+  margin: 12px 14px 0;
 }
 .pad {
   position: relative;
@@ -268,7 +330,7 @@ body {
   display: flex;
   align-items: center;
   gap: 12px;
-  margin: 0 14px;
+  margin: 12px 14px 0;
   padding: 10px 12px;
   border: 1px solid var(--hairline);
   border-radius: 12px;
@@ -346,7 +408,7 @@ body {
 .seq-grid {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 3px;
 }
 .seq-row {
   display: flex;
@@ -374,6 +436,6 @@ body {
   border-radius: 2px;
   cursor: pointer;
 }
-.step.step-alt { background: #e4e6e9; }
+.step.step-alt { background: #e9dcc0; }
 .step.on { background: var(--ink); border-color: var(--ink); }
 .step.current { box-shadow: 0 0 0 1.5px var(--ink) inset; }

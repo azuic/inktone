@@ -19,12 +19,15 @@ and free even when AI mode is off.
 
 ### Ink color → timbre family
 
+Ink colors are a small risograph palette — flat, saturated hues close to real
+Riso ink swatches, rather than the original muted UI-neutral set:
+
 | Ink   | Hex       | Timbre                                                  |
 |-------|-----------|---------------------------------------------------------|
-| Black | `#1c1d20` | Deep sub drone — dual detuned sine sub-bass, long decay |
-| Red   | `#a83f38` | Metallic impact — band-passed noise burst + pitch-drop thump |
-| Blue  | `#33549c` | Resonant tone — detuned triangle pad with LFO vibrato   |
-| Ochre | `#95782e` | Grainy texture — band-passed noise with wobbling filter |
+| Black | `#0D0D0D` | Deep sub drone — dual detuned sine sub-bass, long decay |
+| Red   | `#F0523D` | Metallic impact — band-passed noise burst + pitch-drop thump |
+| Blue  | `#0078BF` | Resonant tone — detuned triangle pad with LFO vibrato   |
+| Ochre | `#D9A429` | Grainy texture — band-passed noise with wobbling filter |
 
 If a sketch mixes inks, the color with the greatest total drawn length wins.
 
@@ -51,13 +54,28 @@ The same features are serialized into the prompt shown on the LCD:
 
 ## Features
 
-- **Sketch paper** — pointer-drawn canvas with dot grid, four ink swatches, UNDO and CLR.
+- **Sketch paper** — pointer-drawn canvas on a cream riso-paper ground with a
+  warm dot grid, four riso ink swatches, UNDO and CLR. Strokes are wide
+  (12px, round caps) and composited with a `multiply` blend at less than
+  full opacity, the way overlapping riso ink passes actually look: two
+  crossing strokes mix into a visibly different third color rather than one
+  simply drawing over the other. The live in-progress stroke redraws once
+  from the clean stroke history on pen-up, so it settles into a single flat
+  multiply pass instead of the self-overlapping round caps of the live
+  preview darkening further than intended.
 - **Generate** — analyzes the sketch, shows staged status on the LCD
   (`reading sketch` → `sending prompt to sfx model` → `rendering audio`), fills the
-  next empty pad with the sound, its prompt, and a thumbnail of the sketch, then
+  next empty pad with the sound, a generated thumbnail, and its prompt, then
   plays it with an e-ink refresh flash.
-- **Six pads (P1–P6)** — tap to play; each shows the sketch thumbnail, an ink LED,
-  and a family tag (SUB / IMPACT / TONE / TEXTR) plus pitch offset.
+- **Six pads (P1–P6)** — tap to play; each shows a generative riso-shape
+  thumbnail, an ink LED, and a family tag (SUB / IMPACT / TONE / TEXTR) plus
+  pitch offset. The thumbnail is 2-3 overlapping flat shapes (circle,
+  triangle, ring, star, semicircle) in the pad's ink color plus one or two
+  hue-shifted companions, multiply-blended like the sketch strokes — seeded
+  from the sketch's own features (jaggedness, duration, pitch, flutter rate)
+  so the same sketch always regenerates the same motif, and different
+  sketches read as visually distinct. This replaced an earlier canvas
+  snapshot of the sketch, which looked blurry at pad size.
 - **Pad controls** — pitch fader (±12 semitones), DEL to clear a slot.
 - **Step sequencer (SEQ)** — a shared master clock (40–240 BPM) and a 16-step
   grid (one row per pad) let you place pads on exact beats relative to each
@@ -68,17 +86,35 @@ The same features are serialized into the prompt shown on the LCD:
 - **Aesthetic** — e-ink instrument panel: IBM Plex Mono, `#eceef0` chassis,
   hairline `rgba(28,29,32,.22)` borders, invert-flash animations, blinking LCD cursor.
 
+## Layout
+
+Tink-on is a landscape-shaped device: a masthead bar over two side-by-side
+panes — a dedicated sketch pane (paper, ink row, prompt/GENERATE) on the
+left, and a pads/controls/sequencer pane on the right. Each pane scrolls
+independently if its content doesn't fit the device's height, so a short
+screen never has to scroll the sketch pane to reach the sequencer.
+
+On a phone held upright (portrait), the two-pane layout doesn't have room to
+work, so the device is hidden and a "ROTATE TO LANDSCAPE" hint is shown
+instead (gated to narrow viewports via `orientation: portrait` combined with
+`max-width: 899px`, so a resized-but-still-wide desktop window isn't mistaken
+for a phone). On desktop, or a phone turned sideways, the device shows
+directly — centered with rounded-corner chrome above ~900px wide, full-bleed
+below it.
+
 ## Architecture
 
 Static frontend, zero npm dependencies, zero build step, plus one serverless
 function:
 
-- `index.html` — layout (device panel, paper, prompt LCD, pad grid, control
-  strip, step sequencer)
-- `styles.css` — design tokens and e-ink styling; responsive (full-screen phone-shaped
-  panel on mobile, centered device on desktop); the device panel scrolls
-  internally once content exceeds one screen
-- `app.js` — stroke capture, feature analysis, prompt compiler, AI-fetch +
+- `index.html` — masthead + two-pane layout (sketch pane, pads/controls/
+  sequencer pane), plus the portrait rotate-hint screen
+- `styles.css` — design tokens and riso/e-ink styling; the device is
+  landscape-shaped at every breakpoint (full-bleed on narrow/short viewports,
+  centered card above ~900px wide), and each pane scrolls internally if its
+  content exceeds the device's height
+- `app.js` — stroke capture (wide multiply-blended riso strokes), feature
+  analysis, prompt compiler, generative riso-shape thumbnails, AI-fetch +
   trim, Web Audio synth engine (fallback), pad/pitch state, step-sequencer
   clock and scheduling
 - `api/generate-sound.js` — Vercel Node serverless function; proxies prompts
