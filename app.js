@@ -19,14 +19,12 @@ const state = {
   ink: 'black',
   generating: false,
   aiMode: true,                  // true: try ElevenLabs Music API, fall back to local synth
-  pads: Array(SLOTS).fill(null), // {params, prompt, thumb, color, pitch, loop, buffer}
+  pads: Array(SLOTS).fill(null), // {params, prompt, thumb, color, pitch, buffer}
   sel: -1,
-  looping: {},                   // slot -> true while loop interval runs
 };
 
 let strokes = [];
 let cur = null;
-const loops = {};                // slot -> interval id
 
 /* ---- paper ---- */
 
@@ -160,7 +158,6 @@ function thumb() {
 
 let _ac = null;
 let _nb = null;
-let _playTimer = null;
 
 function ac() {
   if (!_ac) _ac = new (window.AudioContext || window.webkitAudioContext)();
@@ -178,10 +175,14 @@ function noiseBuf() {
   return b;
 }
 
-function play(i) {
+// `when` (AudioContext time) lets callers schedule a hit precisely ahead of
+// now — the step sequencer needs this for sample-accurate timing; manual
+// pad taps just omit it and play immediately.
+function play(i, when) {
   const pad = state.pads[i];
   if (!pad) return;
   const a = ac();
+  const t = when != null ? when : a.currentTime;
   const semi = Math.pow(2, pad.pitch / 12);
 
   if (pad.buffer) {
@@ -192,13 +193,12 @@ function play(i) {
     const out = a.createGain();
     out.gain.value = 0.9;
     src.connect(out).connect(a.destination);
-    src.start();
-    flashPad(i, Math.min(600, (pad.buffer.duration * 1000) / semi));
+    src.start(t);
+    scheduleFlash(i, t, Math.min(600, (pad.buffer.duration * 1000) / semi));
     return;
   }
 
   const f = pad.params;
-  const t = a.currentTime;
   const fr = f.freq * semi;
   const dur = f.dur;
   const out = a.createGain();
@@ -296,16 +296,24 @@ function play(i) {
     o2.stop(t + dur * 1.5);
   }
 
-  flashPad(i, Math.min(600, dur * 1000));
+  scheduleFlash(i, t, Math.min(600, dur * 1000));
+}
+
+// Schedules the pad's invert-flash to fire when the audio actually starts
+// (t may be in the future for sequencer hits) rather than at call time.
+function scheduleFlash(i, t, ms) {
+  const delayMs = Math.max(0, (t - ac().currentTime) * 1000);
+  setTimeout(() => flashPad(i, ms), delayMs);
 }
 
 function flashPad(i, ms) {
-  const el = padEls[i].root;
+  const entry = padEls[i];
+  const el = entry.root;
   el.classList.remove('playing');
   void el.offsetWidth; // restart the animation
   el.classList.add('playing');
-  clearTimeout(_playTimer);
-  _playTimer = setTimeout(() => el.classList.remove('playing'), ms);
+  clearTimeout(entry.flashTimer);
+  entry.flashTimer = setTimeout(() => el.classList.remove('playing'), ms);
 }
 
 /* ---- generate flow ---- */
@@ -392,8 +400,7 @@ async function generate() {
 
   let slot = state.pads.indexOf(null);
   if (slot < 0) slot = state.sel >= 0 ? state.sel : 0;
-  if (state.looping[slot]) stopLoop(slot);
-  state.pads[slot] = { params: f, prompt, thumb: th, color: f.color, pitch: 0, loop: false, buffer };
+  state.pads[slot] = { params: f, prompt, thumb: th, color: f.color, pitch: 0, buffer };
   state.generating = false;
   state.sel = slot;
   $('genBtn').classList.remove('waiting');
@@ -413,36 +420,9 @@ async function generate() {
 
 function tapPad(i) {
   const pad = state.pads[i];
-  if (!pad) {
-    state.sel = i;
-    render();
-    return;
-  }
-  if (pad.loop) {
-    if (loops[i]) {
-      stopLoop(i);
-      state.sel = i;
-      render();
-      return;
-    }
-    play(i);
-    loops[i] = setInterval(() => play(i), Math.max(250, pad.params.dur * 1000));
-    state.looping[i] = true;
-    state.sel = i;
-    render();
-    return;
-  }
   state.sel = i;
   render();
-  play(i);
-}
-
-function stopLoop(i) {
-  if (loops[i]) {
-    clearInterval(loops[i]);
-    delete loops[i];
-    state.looping[i] = false;
-  }
+  if (pad) play(i);
 }
 
 /* ---- controls ---- */
@@ -472,18 +452,9 @@ fader.addEventListener('pointermove', (e) => {
 fader.addEventListener('pointerup', () => (faderDown = false));
 fader.addEventListener('pointercancel', () => (faderDown = false));
 
-$('loopBtn').addEventListener('click', () => {
-  const p = state.pads[state.sel];
-  if (!p) return;
-  if (p.loop) stopLoop(state.sel);
-  p.loop = !p.loop;
-  render();
-});
-
 $('delBtn').addEventListener('click', () => {
   const i = state.sel;
   if (i < 0 || !state.pads[i]) return;
-  stopLoop(i);
   state.pads[i] = null;
   setLcd('slot cleared');
   render();
@@ -513,6 +484,96 @@ document.addEventListener('keydown', (e) => {
   const k = parseInt(e.key, 10);
   if (k >= 1 && k <= SLOTS && !e.metaKey && !e.ctrlKey) tapPad(k - 1);
 });
+
+/* ---- sequencer ----
+ * A shared clock (not each pad looping on its own timer) is what lets a
+ * pad be placed on a specific beat relative to another. STEPS is a single
+ * 16-step bar of 16th notes at `bpm`; scheduling uses the standard Web
+ * Audio lookahead pattern (poll frequently, schedule audio a bit ahead of
+ * now) so timing stays sample-accurate instead of drifting like setInterval.
+ */
+
+const SEQ_STEPS = 16;
+const SEQ_LOOKAHEAD_MS = 25;
+const SEQ_SCHEDULE_AHEAD_SEC = 0.1;
+
+const seq = {
+  bpm: 120,
+  playing: false,
+  pattern: Array.from({ length: SLOTS }, () => Array(SEQ_STEPS).fill(false)),
+  currentStep: 0,
+  nextStepTime: 0,
+  timer: null,
+};
+let seqHighlighted = -1;
+
+function secondsPerStep() {
+  return 60 / seq.bpm / 4; // 16th notes
+}
+
+function seqScheduleStep(step, time) {
+  for (let i = 0; i < SLOTS; i++) {
+    if (seq.pattern[i][step]) play(i, time);
+  }
+  const delayMs = Math.max(0, (time - ac().currentTime) * 1000);
+  setTimeout(() => seqHighlightStep(step), delayMs);
+}
+
+function seqTick() {
+  const a = ac();
+  while (seq.nextStepTime < a.currentTime + SEQ_SCHEDULE_AHEAD_SEC) {
+    seqScheduleStep(seq.currentStep, seq.nextStepTime);
+    seq.nextStepTime += secondsPerStep();
+    seq.currentStep = (seq.currentStep + 1) % SEQ_STEPS;
+  }
+  seq.timer = setTimeout(seqTick, SEQ_LOOKAHEAD_MS);
+}
+
+function seqHighlightStep(step) {
+  // Guards against a highlight scheduled just before STOP firing after
+  // stopSeq() already cleared the playhead (its 100ms lookahead delay can
+  // outlive the click that stopped playback).
+  if (!seq.playing) return;
+  if (seqHighlighted >= 0) {
+    for (const row of seqRowEls) row.cells[seqHighlighted].classList.remove('current');
+  }
+  for (const row of seqRowEls) row.cells[step].classList.add('current');
+  seqHighlighted = step;
+}
+
+function seqClearHighlight() {
+  if (seqHighlighted >= 0) {
+    for (const row of seqRowEls) row.cells[seqHighlighted].classList.remove('current');
+  }
+  seqHighlighted = -1;
+}
+
+function startSeq() {
+  if (seq.playing) return;
+  ac(); // resume audio inside the user gesture
+  seq.playing = true;
+  seq.currentStep = 0;
+  seq.nextStepTime = ac().currentTime + 0.05;
+  seqTick();
+  render();
+}
+
+function stopSeq() {
+  seq.playing = false;
+  clearTimeout(seq.timer);
+  seq.timer = null;
+  seqClearHighlight();
+  render();
+}
+
+function setBpm(v) {
+  seq.bpm = Math.max(40, Math.min(240, v));
+  $('bpmValue').textContent = seq.bpm;
+}
+
+$('bpmDown').addEventListener('click', () => setBpm(seq.bpm - 5));
+$('bpmUp').addEventListener('click', () => setBpm(seq.bpm + 5));
+$('playBtn').addEventListener('click', () => (seq.playing ? stopSeq() : startSeq()));
 
 /* ---- rendering ---- */
 
@@ -557,6 +618,37 @@ function buildInks() {
   }
 }
 
+const seqRowEls = [];
+
+function buildSeq() {
+  const grid = $('seqGrid');
+  for (let i = 0; i < SLOTS; i++) {
+    const row = document.createElement('div');
+    row.className = 'seq-row';
+    const label = document.createElement('div');
+    label.className = 'seq-row-label';
+    label.textContent = `P${i + 1}`;
+    row.appendChild(label);
+
+    const steps = document.createElement('div');
+    steps.className = 'seq-steps';
+    const cells = [];
+    for (let s = 0; s < SEQ_STEPS; s++) {
+      const cell = document.createElement('div');
+      cell.className = 'step' + (Math.floor(s / 4) % 2 ? ' step-alt' : '');
+      cell.addEventListener('click', () => {
+        seq.pattern[i][s] = !seq.pattern[i][s];
+        cell.classList.toggle('on', seq.pattern[i][s]);
+      });
+      steps.appendChild(cell);
+      cells.push(cell);
+    }
+    row.appendChild(steps);
+    grid.appendChild(row);
+    seqRowEls.push({ cells });
+  }
+}
+
 function renderPaperEmpty() {
   $('paperEmpty').classList.toggle('hidden', strokes.length > 0 || !!cur);
 }
@@ -572,7 +664,6 @@ function render() {
     const ink = p ? INKS.find((k) => k.key === p.color) : null;
     el.root.classList.toggle('filled', !!p);
     el.root.classList.toggle('selected', i === state.sel);
-    el.root.classList.toggle('looping', !!state.looping[i]);
     if (p && el.img.src !== p.thumb) el.img.src = p.thumb;
     el.led.style.background = p ? ink.hex : 'transparent';
     el.led.style.borderColor = p ? ink.hex : '#a3a7ae';
@@ -585,7 +676,9 @@ function render() {
   $('selName').textContent = selPad ? `P${state.sel + 1}` : 'NO PAD';
   $('pitchLabel').textContent = selPad ? (selPad.pitch > 0 ? '+' : '') + selPad.pitch : '—';
   $('faderKnob').style.left = (((selPad ? selPad.pitch : 0) + 12) / 24) * 100 + '%';
-  $('loopBtn').classList.toggle('on', !!(selPad && selPad.loop));
+
+  $('playBtn').classList.toggle('on', seq.playing);
+  $('playBtn').textContent = seq.playing ? 'STOP' : 'PLAY';
 
   renderPaperEmpty();
 }
@@ -594,7 +687,9 @@ function render() {
 
 buildInks();
 buildPads();
+buildSeq();
 setLcd('draw, then press GENERATE');
+setBpm(seq.bpm);
 sizeCanvas();
 render();
 addEventListener('resize', sizeCanvas);

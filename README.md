@@ -2,7 +2,7 @@
 
 Sketch a sound. Draw on the paper with one of four inks and Tink-on translates the
 sketch — its color, position, length, speed, and jaggedness — into a synthesized
-sound on a six-pad sampler. Pitch it, loop it, play a beat.
+sound on a six-pad sampler. Pitch it, place it on a 16-step sequencer, play a beat.
 
 **The drawing is the prompt**: every sketch compiles to a line like
 `fluttering jagged, gritty metallic impact, bright airy character, 0.8s`, sent
@@ -37,6 +37,8 @@ vercel dev
 ```
 
 Keys `1`–`6` trigger pads. The **AI** chip toggles ElevenLabs generation on/off.
+The **SEQ** section is a shared 16-step clock (40–240 BPM) — toggle steps per
+pad and hit PLAY to place pads on exact beats relative to each other.
 
 ## Docs
 

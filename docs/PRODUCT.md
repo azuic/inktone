@@ -5,13 +5,15 @@
 Tink-on is a sketch-to-sound sampler. The user draws on a small sheet of "paper" with
 colored inks; the app reads the sketch — its color, position, length, speed, and
 jaggedness — and translates it into a synthesized sound that lands on one of six
-sampler pads. Pads can be retriggered, pitched, looped, and layered into a beat.
+sampler pads. Pads can be retriggered, pitched, and placed on a shared step
+grid to build a beat.
 
 The core idea: **the drawing is the prompt.** Every sketch is compiled into a
 human-readable prompt line (e.g. `fluttering jagged, gritty metallic impact,
 bright airy character, 0.8s`) — exactly the string a production integration would
 send to a generative sound-effects API. The current build renders that prompt
-locally with Web Audio synthesis so the loop is instant and free.
+locally with Web Audio synthesis, so the loop from sketch to sound is instant
+and free even when AI mode is off.
 
 ## Sound mapping
 
@@ -56,8 +58,13 @@ The same features are serialized into the prompt shown on the LCD:
   plays it with an e-ink refresh flash.
 - **Six pads (P1–P6)** — tap to play; each shows the sketch thumbnail, an ink LED,
   and a family tag (SUB / IMPACT / TONE / TEXTR) plus pitch offset.
-- **Pad controls** — pitch fader (±12 semitones), LOOP toggle (retriggers at the
-  sound's duration), DEL to clear a slot.
+- **Pad controls** — pitch fader (±12 semitones), DEL to clear a slot.
+- **Step sequencer (SEQ)** — a shared master clock (40–240 BPM) and a 16-step
+  grid (one row per pad) let you place pads on exact beats relative to each
+  other, rather than each pad looping independently on its own duration.
+  PLAY/STOP starts and stops the clock; a playhead outline sweeps across the
+  grid while running. Steps can be toggled whether or not PLAY is running,
+  and persist per pad slot even if that slot's sound is later regenerated.
 - **Aesthetic** — e-ink instrument panel: IBM Plex Mono, `#eceef0` chassis,
   hairline `rgba(28,29,32,.22)` borders, invert-flash animations, blinking LCD cursor.
 
@@ -66,11 +73,14 @@ The same features are serialized into the prompt shown on the LCD:
 Static frontend, zero npm dependencies, zero build step, plus one serverless
 function:
 
-- `index.html` — layout (device panel, paper, prompt LCD, pad grid, control strip)
+- `index.html` — layout (device panel, paper, prompt LCD, pad grid, control
+  strip, step sequencer)
 - `styles.css` — design tokens and e-ink styling; responsive (full-screen phone-shaped
-  panel on mobile, centered device on desktop)
+  panel on mobile, centered device on desktop); the device panel scrolls
+  internally once content exceeds one screen
 - `app.js` — stroke capture, feature analysis, prompt compiler, AI-fetch +
-  trim, Web Audio synth engine (fallback), pad/loop/pitch state
+  trim, Web Audio synth engine (fallback), pad/pitch state, step-sequencer
+  clock and scheduling
 - `api/generate-sound.js` — Vercel Node serverless function; proxies prompts
   to the ElevenLabs Sound Effects API, keeps `ELEVENLABS_API_KEY` server-side.
   Plain `fetch`, no SDK, no `package.json` — stays zero-build.
@@ -101,11 +111,9 @@ Music's 3s floor.
   network call entirely and always uses the instant, free local synth.
 - Generated audio plays through an `AudioBufferSourceNode` with
   `playbackRate` driven by the pitch fader (same ±12 semitone range as the
-  synth path), and loops the same way — `setInterval` retriggering `play()`
-  at the pad's duration. (The API has a native `loop` flag for seamless loop
-  generation; not wired up yet because it's fixed at generation time while
-  Tink-on's LOOP toggle is a post-hoc per-pad choice, and forcing it on for
-  every clip would soften percussive hits like the red "impact" family.)
+  synth path). Both AI and synth playback go through the same `play(i, when)`
+  path, which accepts an optional AudioContext time so the step sequencer can
+  schedule hits precisely ahead of now instead of just "play immediately."
 
 This is a paid ElevenLabs feature and each AI generation is a billed request;
 the local synth remains the free, always-available fallback and is what powers
@@ -113,6 +121,6 @@ the app when `ELEVENLABS_API_KEY` isn't set.
 
 ## Non-goals (v1)
 
-- Sequencer / step recording (loop toggle covers rhythmic use)
-- Saving kits between sessions
+- Saving kits or sequencer patterns between sessions
 - Multi-touch simultaneous pad playing
+- Patterns longer than one 16-step bar, or per-pad step counts/subdivisions

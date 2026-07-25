@@ -59,7 +59,10 @@ GitHub for source of truth, Vercel for hosting, CDN, and the function runtime.
   `/api/generate-sound`, plays real audio, trimmed to the sketch duration
 - With AI chip off, or key missing/invalid: GENERATE still works via local
   synth, LCD shows the fallback message when a call was attempted and failed
-- Pads play/loop/pitch/delete correctly
+- Pads play/pitch/delete correctly
+- SEQ: toggling steps works, PLAY starts a sample-accurate loop with a moving
+  playhead, STOP halts cleanly with no stray playhead highlight left behind
+- Device panel scrolls internally (not clipped) when content exceeds one screen
 - Layout correct at 390px (phone) and desktop widths
 
 ### 5. Rollback

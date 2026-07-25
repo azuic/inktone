@@ -59,8 +59,20 @@
       </div>
       <div class="fader-value" id="pitchLabel">—</div>
     </div>
-    <button class="chip chip-toggle" id="loopBtn">LOOP</button>
     <button class="chip" id="delBtn">DEL</button>
+  </section>
+
+  <section class="seq-card">
+    <div class="seq-head">
+      <div class="seq-title">SEQ</div>
+      <div class="bpm-group">
+        <button class="chip" id="bpmDown">−</button>
+        <div class="bpm-value"><span id="bpmValue">120</span><span class="bpm-unit">BPM</span></div>
+        <button class="chip" id="bpmUp">+</button>
+      </div>
+      <button class="chip chip-toggle" id="playBtn">PLAY</button>
+    </div>
+    <div class="seq-grid" id="seqGrid"></div>
   </section>
 
 </main>
