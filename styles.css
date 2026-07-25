@@ -42,6 +42,10 @@ body {
   overflow-x: hidden;
   -webkit-overflow-scrolling: touch;
 }
+/* Every section keeps its natural size — without this, flexbox's default
+   shrink-to-fit squeezes sections (clipping content, e.g. paper-card's
+   overflow:hidden hiding the ink row) instead of the device scrolling. */
+.device > * { flex: none; }
 
 @media (min-width: 440px) and (min-height: 700px) {
   .device {
