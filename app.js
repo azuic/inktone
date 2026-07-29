@@ -16,7 +16,7 @@ const STROKE_WIDTH = 12;
 const STROKE_ALPHA = 0.92;
 
 const PAPER_H = 224;
-const SLOTS = 6;
+const SLOTS = 4;
 
 const $ = (id) => document.getElementById(id);
 const device = $('device');
@@ -622,7 +622,7 @@ $('aiBtn').addEventListener('click', () => {
   render();
 });
 
-// keyboard: 1–6 trigger pads
+// keyboard: 1–4 trigger pads
 document.addEventListener('keydown', (e) => {
   const k = parseInt(e.key, 10);
   if (k >= 1 && k <= SLOTS && !e.metaKey && !e.ctrlKey) tapPad(k - 1);

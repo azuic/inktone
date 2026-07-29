@@ -4,7 +4,7 @@
 
 Tink-on is a sketch-to-sound sampler. The user draws on a small sheet of "paper" with
 colored inks; the app reads the sketch — its color, position, length, speed, and
-jaggedness — and translates it into a synthesized sound that lands on one of six
+jaggedness — and translates it into a synthesized sound that lands on one of four
 sampler pads. Pads can be retriggered, pitched, and placed on a shared step
 grid to build a beat.
 
@@ -67,7 +67,7 @@ The same features are serialized into the prompt shown on the LCD:
   (`reading sketch` → `sending prompt to sfx model` → `rendering audio`), fills the
   next empty pad with the sound, a generated thumbnail, and its prompt, then
   plays it with an e-ink refresh flash.
-- **Six pads (P1–P6)** — tap to play; each shows a generative riso-shape
+- **Four pads (P1–P4)** — tap to play; each shows a generative riso-shape
   thumbnail, an ink LED, and a family tag (SUB / IMPACT / TONE / TEXTR) plus
   pitch offset. The thumbnail is 2-3 overlapping flat shapes (circle,
   triangle, ring, star, semicircle) in the pad's ink color plus one or two

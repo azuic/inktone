@@ -2,7 +2,7 @@
 
 Sketch a sound. Draw on the paper with one of four risograph inks and Tink-on
 translates the sketch — its color, position, length, speed, and jaggedness —
-into a synthesized sound on a six-pad sampler. Pitch it, place it on a
+into a synthesized sound on a four-pad sampler. Pitch it, place it on a
 16-step sequencer, play a beat.
 
 Tink-on is a landscape-shaped instrument, played sideways: on a phone, rotate
