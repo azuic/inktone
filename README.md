@@ -12,9 +12,9 @@ and step sequencer.
 **The drawing is the prompt**: every sketch compiles to a line like
 `fluttering jagged, gritty metallic impact, bright airy character, 0.8s`, sent
 to the [ElevenLabs Sound Effects API](https://elevenlabs.io/docs/api-reference/text-to-sound-effects)
-via a small serverless function that keeps the API key server-side. If AI
-generation is off, unavailable, or fails, Tink-on falls back instantly to a
-local Web Audio synth — no backend, no keys, no network.
+via a small serverless function that keeps the API key server-side. If that
+call is unavailable or fails, Tink-on falls back instantly to a local
+[Tone.js](https://tonejs.github.io) synth — no backend, no keys, no network.
 
 ## Mapping
 
@@ -30,7 +30,8 @@ local Web Audio synth — no backend, no keys, no network.
 
 ## Run locally
 
-Frontend only, no AI (local synth always used):
+Frontend only — the AI call 404s without the serverless function, so every
+pad uses the local Tone.js synth:
 
 ```sh
 npx serve .
@@ -46,9 +47,10 @@ cp .env.example .env.local   # fill in ELEVENLABS_API_KEY
 vercel dev
 ```
 
-Keys `1`–`6` trigger pads. The **AI** chip toggles ElevenLabs generation on/off.
-The **SEQ** section is a shared 16-step clock (40–240 BPM) — toggle steps per
-pad and hit PLAY to place pads on exact beats relative to each other.
+Keys `1`–`4` trigger pads. GENERATE always calls the ElevenLabs Sound Effects
+API and falls back to the Tone.js synth on any failure. The **SEQ** section is
+a shared 16-step clock (40–240 BPM) — toggle steps per pad and hit PLAY to
+place pads on exact beats relative to each other.
 
 ## Docs
 
@@ -57,6 +59,7 @@ pad and hit PLAY to place pads on exact beats relative to each other.
 
 ## Stack
 
-Vanilla HTML/CSS/JS, Web Audio API, IBM Plex Mono, one Vercel serverless
-function (`api/generate-sound.js`, zero dependencies) calling the ElevenLabs
-Sound Effects API. Deployed on Vercel.
+Vanilla HTML/CSS/JS, Web Audio API, [Tone.js](https://tonejs.github.io)
+(vendored at `vendor/tone.js` for the fallback synth), IBM Plex Mono, and one
+Vercel serverless function (`api/generate-sound.js`, no dependencies) calling
+the ElevenLabs Sound Effects API. No build step. Deployed on Vercel.

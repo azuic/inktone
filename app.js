@@ -28,7 +28,6 @@ const ctx = canvas.getContext('2d');
 const state = {
   ink: 'blue',
   generating: false,
-  aiMode: true,                  // true: try ElevenLabs Music API, fall back to local synth
   pads: Array(SLOTS).fill(null), // {params, prompt, thumb, color, pitch, buffer}
   sel: -1,
 };
@@ -392,7 +391,6 @@ function makeThumb(f) {
 /* ---- audio engine ---- */
 
 let _ac = null;
-let _nb = null;
 
 function ac() {
   if (!_ac) _ac = new (window.AudioContext || window.webkitAudioContext)();
@@ -400,14 +398,81 @@ function ac() {
   return _ac;
 }
 
-function noiseBuf() {
-  if (_nb) return _nb;
-  const a = ac();
-  const b = a.createBuffer(1, a.sampleRate * 2, a.sampleRate);
-  const d = b.getChannelData(0);
-  for (let i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
-  _nb = b;
-  return b;
+/* ---- Tone.js fallback synth ----
+ * When the ElevenLabs call fails, a pad is voiced locally by Tone.js. Tone is
+ * pointed at the app's own AudioContext (Tone.setContext), so its clock is the
+ * same one the step sequencer schedules against — a hit scheduled at
+ * AudioContext time `t` lines up whether it plays back an AI buffer or a Tone
+ * voice. Each of the four ink families maps to a Tone voice.
+ */
+let _toneReady = false;
+let _toneOut = null;
+
+function ensureTone() {
+  if (_toneReady) return;
+  Tone.setContext(ac());
+  _toneOut = new Tone.Gain(0.7).toDestination();
+  _toneReady = true;
+}
+
+// Tone nodes aren't garbage-collected the way bare Web Audio nodes are, so
+// free each voice's nodes once it has finished sounding.
+function disposeLater(nodes, endTime) {
+  const ms = Math.max(0, endTime - ac().currentTime) * 1000 + 400;
+  setTimeout(() => { for (const n of nodes) { try { n.dispose(); } catch (e) {} } }, ms);
+}
+
+function playSynth(f, fr, dur, t) {
+  ensureTone();
+  const out = _toneOut;
+
+  if (f.color === 'orange') {
+    // metallic impact: pitch-drop membrane thump + band-passed noise burst
+    const membrane = new Tone.MembraneSynth({
+      pitchDecay: 0.05, octaves: 5,
+      envelope: { attack: 0.001, decay: 0.3, sustain: 0, release: 0.1 },
+    }).connect(out);
+    membrane.triggerAttackRelease(Math.max(40, fr * 0.6), dur * 0.6, t);
+    const bp = new Tone.Filter({ type: 'bandpass', frequency: fr * 2, Q: 8 - f.jag * 5 }).connect(out);
+    const noise = new Tone.NoiseSynth({
+      noise: { type: 'white' },
+      envelope: { attack: 0.001, decay: dur * 0.5, sustain: 0 },
+    }).connect(bp);
+    noise.triggerAttackRelease(dur * 0.5, t);
+    disposeLater([membrane, noise, bp], t + dur + 0.3);
+  } else if (f.color === 'blue') {
+    // resonant tone: detuned triangle pad through vibrato + a lowpass
+    const lp = new Tone.Filter({ type: 'lowpass', frequency: fr * 4 }).connect(out);
+    const vib = new Tone.Vibrato({ frequency: f.rate, depth: 0.1 + f.jag * 0.25 }).connect(lp);
+    const synth = new Tone.Synth({
+      oscillator: { type: 'fattriangle', count: 2, spread: 6 + f.jag * 25 },
+      envelope: { attack: 0.05, decay: 0.2, sustain: 0.6, release: dur * 0.6 },
+    }).connect(vib);
+    synth.triggerAttackRelease(fr, dur, t);
+    disposeLater([synth, vib, lp], t + dur + 0.6);
+  } else if (f.color === 'yellow') {
+    // grainy texture: pink noise through a wobbling band-pass auto-filter
+    const env = new Tone.AmplitudeEnvelope({ attack: 0.04, decay: 0.1, sustain: 0.75, release: 0.12 }).connect(out);
+    const auto = new Tone.AutoFilter({
+      frequency: f.rate, depth: 1, baseFrequency: fr * 2, octaves: 2,
+      filter: { type: 'bandpass', Q: 2 + f.jag * 6 },
+    }).connect(env).start(t);
+    const noise = new Tone.Noise('pink').connect(auto);
+    noise.start(t);
+    noise.stop(t + dur + 0.05);
+    env.triggerAttackRelease(dur, t);
+    disposeLater([noise, auto, env], t + dur + 0.3);
+  } else {
+    // pink: deep sub drone, detuned sines, long decay (boosted — a low sub
+    // reads much quieter than the other voices at matched levels)
+    const synth = new Tone.Synth({
+      volume: 10,
+      oscillator: { type: 'fatsine', count: 2, spread: 8 },
+      envelope: { attack: 0.02, decay: dur * 1.2, sustain: 0.15, release: 0.3 },
+    }).connect(out);
+    synth.triggerAttackRelease(Math.max(35, fr * 0.5), dur, t);
+    disposeLater([synth], t + dur + 0.5);
+  }
 }
 
 // `when` (AudioContext time) lets callers schedule a hit precisely ahead of
@@ -434,104 +499,8 @@ function play(i, when) {
   }
 
   const f = pad.params;
-  const fr = f.freq * semi;
-  const dur = f.dur;
-  const out = a.createGain();
-  out.gain.value = 0.7;
-  out.connect(a.destination);
-
-  if (f.color === 'orange') {
-    // filtered noise burst + pitch-drop thump
-    const n = a.createBufferSource();
-    n.buffer = noiseBuf();
-    const bp = a.createBiquadFilter();
-    bp.type = 'bandpass';
-    bp.frequency.value = fr * 2;
-    bp.Q.value = 8 - f.jag * 5;
-    const g = a.createGain();
-    g.gain.setValueAtTime(1, t);
-    g.gain.exponentialRampToValueAtTime(0.001, t + dur * 0.6);
-    n.connect(bp).connect(g).connect(out);
-    n.start(t);
-    n.stop(t + dur);
-    const o = a.createOscillator();
-    o.frequency.setValueAtTime(fr * 2, t);
-    o.frequency.exponentialRampToValueAtTime(Math.max(30, fr * 0.4), t + 0.12);
-    const og = a.createGain();
-    og.gain.setValueAtTime(0.9, t);
-    og.gain.exponentialRampToValueAtTime(0.001, t + 0.25);
-    o.connect(og).connect(out);
-    o.start(t);
-    o.stop(t + 0.3);
-  } else if (f.color === 'blue') {
-    // detuned triangle pad with vibrato
-    const g = a.createGain();
-    g.gain.setValueAtTime(0, t);
-    g.gain.linearRampToValueAtTime(0.5, t + 0.05);
-    g.gain.exponentialRampToValueAtTime(0.001, t + dur);
-    const lp = a.createBiquadFilter();
-    lp.type = 'lowpass';
-    lp.frequency.value = fr * 4;
-    lp.connect(g).connect(out);
-    for (const det of [-1, 1]) {
-      const o = a.createOscillator();
-      o.type = 'triangle';
-      o.frequency.value = fr;
-      o.detune.value = det * (6 + f.jag * 25);
-      const l = a.createOscillator();
-      l.frequency.value = f.rate;
-      const lg = a.createGain();
-      lg.gain.value = 4 + f.jag * 10;
-      l.connect(lg).connect(o.detune);
-      l.start(t);
-      l.stop(t + dur);
-      o.connect(lp);
-      o.start(t);
-      o.stop(t + dur);
-    }
-  } else if (f.color === 'yellow') {
-    // band-passed noise with wobbling filter
-    const n = a.createBufferSource();
-    n.buffer = noiseBuf();
-    n.loop = true;
-    const bp = a.createBiquadFilter();
-    bp.type = 'bandpass';
-    bp.frequency.value = fr * 3;
-    bp.Q.value = 2 + f.jag * 6;
-    const l = a.createOscillator();
-    l.frequency.value = f.rate;
-    const lg = a.createGain();
-    lg.gain.value = fr * 1.5;
-    l.connect(lg).connect(bp.frequency);
-    l.start(t);
-    l.stop(t + dur);
-    const g = a.createGain();
-    g.gain.setValueAtTime(0, t);
-    g.gain.linearRampToValueAtTime(0.45, t + 0.04);
-    g.gain.exponentialRampToValueAtTime(0.001, t + dur);
-    n.connect(bp).connect(g).connect(out);
-    n.start(t);
-    n.stop(t + dur);
-  } else {
-    // pink: deep sub drone, dual detuned sines
-    const o = a.createOscillator();
-    o.frequency.value = Math.max(35, fr * 0.5);
-    const o2 = a.createOscillator();
-    o2.frequency.value = Math.max(35, fr * 0.5) * 1.005;
-    const g = a.createGain();
-    g.gain.setValueAtTime(0, t);
-    g.gain.linearRampToValueAtTime(0.8, t + 0.02);
-    g.gain.exponentialRampToValueAtTime(0.001, t + dur * 1.4);
-    o.connect(g);
-    o2.connect(g);
-    g.connect(out);
-    o.start(t);
-    o.stop(t + dur * 1.5);
-    o2.start(t);
-    o2.stop(t + dur * 1.5);
-  }
-
-  scheduleFlash(i, t, Math.min(600, dur * 1000));
+  playSynth(f, f.freq * semi, f.dur, t);
+  scheduleFlash(i, t, Math.min(600, f.dur * 1000));
 }
 
 // Schedules the pad's invert-flash to fire when the audio actually starts
@@ -616,21 +585,18 @@ async function generate() {
   setLcd('reading sketch');
   await wait(300);
 
+  // Always try the ElevenLabs Sound Effects API; on any failure fall back to
+  // the local Tone.js synth so a pad always ends up with a playable sound.
   let buffer = null;
-  if (state.aiMode) {
-    setLcd('> sending prompt to sfx model');
-    try {
-      buffer = await fetchAiBuffer(prompt, f.dur);
-      setLcd('> rendering audio');
-      await wait(150);
-    } catch (err) {
-      console.warn('AI generation failed, falling back to local synth:', err);
-      setLcd('AI unavailable — local synth');
-      await wait(500);
-    }
-  } else {
+  setLcd('> sending prompt to sfx model');
+  try {
+    buffer = await fetchAiBuffer(prompt, f.dur);
     setLcd('> rendering audio');
-    await wait(700);
+    await wait(150);
+  } catch (err) {
+    console.warn('AI generation failed, falling back to Tone.js synth:', err);
+    setLcd('sfx model unavailable — synth');
+    await wait(500);
   }
 
   let slot = state.pads.indexOf(null);
@@ -708,11 +674,6 @@ $('clrBtn').addEventListener('click', () => {
 });
 
 $('genBtn').addEventListener('click', generate);
-
-$('aiBtn').addEventListener('click', () => {
-  state.aiMode = !state.aiMode;
-  render();
-});
 
 // keyboard: 1–4 trigger pads
 document.addEventListener('keydown', (e) => {
@@ -891,7 +852,6 @@ function renderPaperEmpty() {
 function render() {
   for (const ink of INKS) ink.el.classList.toggle('selected', ink.key === state.ink);
   $('inkHint').textContent = INKS.find((i) => i.key === state.ink).word.toUpperCase();
-  $('aiBtn').classList.toggle('on', state.aiMode);
 
   for (let i = 0; i < SLOTS; i++) {
     const p = state.pads[i];

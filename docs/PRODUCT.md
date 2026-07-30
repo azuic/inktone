@@ -10,10 +10,9 @@ grid to build a beat.
 
 The core idea: **the drawing is the prompt.** Every sketch is compiled into a
 human-readable prompt line (e.g. `fluttering jagged, gritty metallic impact,
-bright airy character, 0.8s`) — exactly the string a production integration would
-send to a generative sound-effects API. The current build renders that prompt
-locally with Web Audio synthesis, so the loop from sketch to sound is instant
-and free even when AI mode is off.
+bright airy character, 0.8s`) sent to the ElevenLabs Sound Effects API. If that
+call fails, the prompt's features drive a local Tone.js synth instead, so a
+sketch always turns into a playable pad — with or without the network.
 
 ## Sound mapping
 
@@ -113,26 +112,30 @@ below it.
 
 ## Architecture
 
-Static frontend, zero npm dependencies, zero build step, plus one serverless
+Static frontend, one vendored library, zero build step, plus one serverless
 function:
 
 - `index.html` — masthead + two-pane layout (sketch + controls pane, pad
-  grid / sequencer pane), plus the portrait rotate-hint screen
+  grid / sequencer pane), plus the portrait rotate-hint screen; loads
+  `vendor/tone.js` before `app.js`
 - `styles.css` — design tokens and riso/e-ink styling; the device is
   landscape-shaped at every breakpoint (full-bleed on narrow/short viewports,
   centered card above ~900px wide), and each pane scrolls internally if its
   content exceeds the device's height
 - `app.js` — stroke capture (wide multiply-blended riso strokes), feature
   analysis, prompt compiler, generative riso-shape thumbnails, AI-fetch +
-  trim, Web Audio synth engine (fallback), pad/pitch state, step-sequencer
-  clock and scheduling
+  trim, Tone.js fallback synth, pad/pitch state, step-sequencer clock and
+  scheduling
+- `vendor/tone.js` — the [Tone.js](https://tonejs.github.io) UMD build,
+  committed to the repo rather than pulled from a CDN so the site stays
+  self-contained and buildless (exposes the global `Tone`)
 - `api/generate-sound.js` — Vercel Node serverless function; proxies prompts
   to the ElevenLabs Sound Effects API, keeps `ELEVENLABS_API_KEY` server-side.
   Plain `fetch`, no SDK, no `package.json` — stays zero-build.
 
-With AI mode on and a key configured, audio comes from ElevenLabs; otherwise
-(or on any failure) it's synthesized client-side via the Web Audio API, and no
-data leaves the browser at all.
+With a key configured, audio comes from ElevenLabs; otherwise (or on any
+failure) it's synthesized client-side by Tone.js, and no data leaves the
+browser at all.
 
 ## AI sound generation (ElevenLabs Sound Effects API)
 
@@ -149,20 +152,33 @@ Music's 3s floor.
   `duration_seconds` (clamped to the API's 0.5s minimum). Only sketches under
   0.5s need the response trimmed afterward — `trimBuffer` in `app.js` cuts it
   down with a 30ms fade-out; everything else plays back close to full length.
-- The **AI** chip in the ink row toggles generation on/off. On (default): tap
-  GENERATE and Tink-on requests real audio; on failure (no key configured,
-  rate limit, network error, timeout) it logs a warning and falls back to the
-  local synth automatically, with the LCD noting the fallback. Off: skips the
-  network call entirely and always uses the instant, free local synth.
-- Generated audio plays through an `AudioBufferSourceNode` with
+- GENERATE always attempts the API (there is no on/off toggle). On failure —
+  no key configured, rate limit, network error, timeout — it logs a warning,
+  shows `sfx model unavailable — synth` on the LCD, and voices the pad with
+  the Tone.js fallback instead.
+- AI-generated audio plays through an `AudioBufferSourceNode` with
   `playbackRate` driven by the pitch fader (same ±12 semitone range as the
   synth path). Both AI and synth playback go through the same `play(i, when)`
   path, which accepts an optional AudioContext time so the step sequencer can
   schedule hits precisely ahead of now instead of just "play immediately."
 
 This is a paid ElevenLabs feature and each AI generation is a billed request;
-the local synth remains the free, always-available fallback and is what powers
+the Tone.js synth is the free, always-available fallback and is what powers
 the app when `ELEVENLABS_API_KEY` isn't set.
+
+### Tone.js fallback synth
+
+When the API call fails, the pad is voiced locally by Tone.js. Tone is pointed
+at the app's own AudioContext (`Tone.setContext(ac())`) so its clock is the
+same one the sequencer schedules against — a hit scheduled at AudioContext
+time `t` lines up whether it's an AI buffer or a Tone voice. Each ink family
+maps to a Tone voice: **orange** (impact) = `MembraneSynth` pitch-drop thump +
+band-passed `NoiseSynth` burst; **blue** (tone) = detuned `fattriangle`
+`Synth` through `Vibrato` + a lowpass; **yellow** (texture) = pink `Noise`
+through a wobbling `AutoFilter` band-pass; **pink** (sub) = detuned `fatsine`
+`Synth` with a long decay (level-boosted, since a low sub reads much quieter
+than the other voices). Voice nodes are disposed on a timer after they finish
+sounding, since Tone nodes aren't garbage-collected like bare Web Audio nodes.
 
 ## Non-goals (v1)
 

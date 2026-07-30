@@ -2,9 +2,10 @@
 
 ## Overview
 
-Tink-on is a static frontend plus one Vercel serverless function (no npm
-dependencies, no build step), which keeps the deployment story minimal:
-GitHub for source of truth, Vercel for hosting, CDN, and the function runtime.
+Tink-on is a static frontend (with Tone.js vendored in-repo for the fallback
+synth) plus one Vercel serverless function, with no build step, which keeps
+the deployment story minimal: GitHub for source of truth, Vercel for hosting,
+CDN, and the function runtime.
 
 > The app was renamed from "Inktone" to "Tink-on" in-product only. The GitHub
 > repo (`azuic/inktone`) and Vercel project/domain (`inktone-lemon.vercel.app`)
@@ -55,10 +56,13 @@ GitHub for source of truth, Vercel for hosting, CDN, and the function runtime.
 - Page loads over HTTPS, fonts (IBM Plex Mono via Google Fonts) render
 - Drawing works with mouse and touch (pointer events, `touch-action: none`)
 - GENERATE produces sound after a user gesture (AudioContext resume path)
-- With `ELEVENLABS_API_KEY` set and AI chip on: GENERATE calls
-  `/api/generate-sound`, plays real audio, trimmed to the sketch duration
-- With AI chip off, or key missing/invalid: GENERATE still works via local
-  synth, LCD shows the fallback message when a call was attempted and failed
+- With `ELEVENLABS_API_KEY` set: GENERATE calls `/api/generate-sound` and
+  plays real audio, trimmed to the sketch duration
+- With the key missing/invalid or the call failing: GENERATE still produces a
+  playable pad via the Tone.js fallback synth, and the LCD shows
+  `sfx model unavailable — synth`
+- `vendor/tone.js` loads (global `Tone` defined); all four fallback voices
+  are audible; the sequencer schedules them on the shared clock
 - Pads play/pitch/delete correctly
 - SEQ: toggling steps works, PLAY starts a sample-accurate loop with a moving
   playhead, STOP halts cleanly with no stray playhead highlight left behind
