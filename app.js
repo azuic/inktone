@@ -13,7 +13,6 @@ const INKS = [
 
 const PAPER_HEX = '#f4f5f7'; // sketch canvas ground: cold gray
 const PAPER_GRID_HEX = '#c4c8cf';
-const THUMB_BG_HEX = '#e5e7ea'; // pad thumbnail ground: cold gray
 const STROKE_WIDTH = 12;
 const STROKE_ALPHA = 0.92;
 
@@ -174,14 +173,13 @@ function promptFor(f) {
 }
 
 /* ---- pad art ----
- * Each generated pad shows a single bold riso shape (drawn from a small
- * library modelled on classic riso geometry — circle, star, sunburst,
- * flower, rings, crescent, etc.) in the sketch's dominant ink color, on a
- * cold-gray ground. The shape is given a dotted grain texture by punching
- * a jittered field of tiny holes through it, so the gray shows through as
- * riso-print speckle. Everything is seeded from the sketch's own features,
- * so one sketch always regenerates the same motif and different sketches
- * read as distinct.
+ * Each generated pad shows a single bold geometric shape (from a small
+ * library of solid forms — circle, triangle, polygon, star, trapezoid,
+ * squircle, etc.) filled with a black halftone: a grid of dots that are
+ * large in the center and shrink toward the edges, clipped to the shape.
+ * The shape is fit and centered on a cold-gray ground. Everything is seeded
+ * from the sketch's own features, so one sketch always regenerates the same
+ * motif and different sketches read as distinct.
  */
 
 function mulberry32(seed) {
@@ -194,155 +192,76 @@ function mulberry32(seed) {
   };
 }
 
-// Each shape draws centered at (cx,cy) within radius r, using the context's
-// current fill/stroke style (the ink color). rot is a base rotation.
-function shCircle(g, cx, cy, r) {
+// Each function traces a solid, closed path centered at (cx,cy) within
+// radius r — it only defines the path (no fill), so makeThumb can clip to it
+// and halftone-fill the interior.
+function pathCircle(g, cx, cy, r) {
   g.beginPath();
   g.arc(cx, cy, r, 0, Math.PI * 2);
-  g.fill();
-}
-function shTriangle(g, cx, cy, r, rot) {
-  g.beginPath();
-  for (let i = 0; i < 3; i++) {
-    const a = rot - Math.PI / 2 + (i / 3) * Math.PI * 2;
-    const x = cx + Math.cos(a) * r, y = cy + Math.sin(a) * r;
-    i ? g.lineTo(x, y) : g.moveTo(x, y);
-  }
   g.closePath();
-  g.fill();
 }
-function shPolygon(sides) {
-  return (g, cx, cy, r, rot) => {
+function pathPolygon(sides, rot0) {
+  return (g, cx, cy, r) => {
     g.beginPath();
     for (let i = 0; i < sides; i++) {
-      const a = rot + (i / sides) * Math.PI * 2;
+      const a = rot0 + (i / sides) * Math.PI * 2;
       const x = cx + Math.cos(a) * r, y = cy + Math.sin(a) * r;
       i ? g.lineTo(x, y) : g.moveTo(x, y);
     }
     g.closePath();
-    g.fill();
   };
 }
-function shStar(points, innerRatio) {
-  return (g, cx, cy, r, rot) => {
+function pathStar(points, innerRatio, rot0) {
+  return (g, cx, cy, r) => {
     g.beginPath();
     for (let i = 0; i < points * 2; i++) {
-      const a = rot + (i / (points * 2)) * Math.PI * 2;
+      const a = rot0 + (i / (points * 2)) * Math.PI * 2;
       const rr = i % 2 ? r * innerRatio : r;
       const x = cx + Math.cos(a) * rr, y = cy + Math.sin(a) * rr;
       i ? g.lineTo(x, y) : g.moveTo(x, y);
     }
     g.closePath();
-    g.fill();
   };
 }
-function shTarget(g, cx, cy, r) {
-  const rings = 3;
-  g.lineWidth = r / (rings * 2 + 0.5);
-  for (let i = rings; i >= 1; i--) {
-    g.beginPath();
-    g.arc(cx, cy, (r * i) / rings - g.lineWidth * 0.5, 0, Math.PI * 2);
-    g.stroke();
-  }
+function pathTrapezoid(g, cx, cy, r) {
+  const tw = r * 0.6, bw = r, h = r * 0.78;
   g.beginPath();
-  g.arc(cx, cy, g.lineWidth * 0.9, 0, Math.PI * 2);
-  g.fill();
-}
-function shFlower(g, cx, cy, r, rot) {
-  const petals = 6;
-  const pr = r * 0.42;
-  for (let i = 0; i < petals; i++) {
-    const a = rot + (i / petals) * Math.PI * 2;
-    g.beginPath();
-    g.arc(cx + Math.cos(a) * r * 0.55, cy + Math.sin(a) * r * 0.55, pr, 0, Math.PI * 2);
-    g.fill();
-  }
-  g.beginPath();
-  g.arc(cx, cy, r * 0.34, 0, Math.PI * 2);
-  g.fill();
-}
-function shSun(g, cx, cy, r, rot) {
-  shStar(12, 0.62)(g, cx, cy, r, rot);
-  g.beginPath();
-  g.arc(cx, cy, r * 0.5, 0, Math.PI * 2);
-  g.fill();
-}
-function shCrescent(g, cx, cy, r, rot) {
-  g.beginPath();
-  g.arc(cx, cy, r, 0, Math.PI * 2);
-  g.fill();
-  const prev = g.globalCompositeOperation;
-  g.globalCompositeOperation = 'destination-out';
-  g.beginPath();
-  g.arc(cx + Math.cos(rot) * r * 0.55, cy + Math.sin(rot) * r * 0.55, r * 0.86, 0, Math.PI * 2);
-  g.fill();
-  g.globalCompositeOperation = prev;
-}
-function shArcs(g, cx, cy, r, rot) {
-  const rings = 3;
-  g.lineWidth = r / (rings * 2 + 1);
-  g.lineCap = 'round';
-  for (let i = rings; i >= 1; i--) {
-    g.beginPath();
-    g.arc(cx, cy + r * 0.35, (r * i) / rings, rot + Math.PI, rot + Math.PI * 2);
-    g.stroke();
-  }
-}
-function shSquares(g, cx, cy, r) {
-  const rings = 3;
-  g.lineWidth = r / (rings * 2);
-  for (let i = rings; i >= 1; i--) {
-    const s = (r * i) / rings;
-    g.strokeRect(cx - s, cy - s, s * 2, s * 2);
-  }
-}
-function shAsterisk(g, cx, cy, r, rot) {
-  const arms = 6;
-  g.lineWidth = r * 0.26;
-  g.lineCap = 'round';
-  for (let i = 0; i < arms; i++) {
-    const a = rot + (i / arms) * Math.PI;
-    g.beginPath();
-    g.moveTo(cx - Math.cos(a) * r, cy - Math.sin(a) * r);
-    g.lineTo(cx + Math.cos(a) * r, cy + Math.sin(a) * r);
-    g.stroke();
-  }
-}
-function shSemicircle(g, cx, cy, r, rot) {
-  g.beginPath();
-  g.moveTo(cx, cy);
-  g.arc(cx, cy, r, rot, rot + Math.PI);
+  g.moveTo(cx - tw, cy - h);
+  g.lineTo(cx + tw, cy - h);
+  g.lineTo(cx + bw, cy + h);
+  g.lineTo(cx - bw, cy + h);
   g.closePath();
-  g.fill();
 }
-function shPieSplit(g, cx, cy, r, rot) {
-  for (const off of [0, Math.PI]) {
-    g.beginPath();
-    g.moveTo(cx, cy);
-    g.arc(cx, cy, r, rot + off, rot + off + Math.PI / 2);
-    g.closePath();
-    g.fill();
-  }
-}
-function shSquiggle(g, cx, cy, r, rot) {
-  g.lineWidth = r * 0.3;
-  g.lineCap = 'round';
-  g.lineJoin = 'round';
+function pathSemicircle(g, cx, cy, r) {
   g.beginPath();
-  const w = r * 1.7;
-  for (let i = 0; i <= 40; i++) {
-    const t = i / 40;
-    const x = cx - w / 2 + t * w;
-    const y = cy + Math.sin(rot + t * Math.PI * 3) * r * 0.55;
+  g.arc(cx, cy + r * 0.4, r, Math.PI, Math.PI * 2);
+  g.closePath();
+}
+function pathSquircle(g, cx, cy, r) {
+  const n = 4, steps = 64;
+  g.beginPath();
+  for (let i = 0; i <= steps; i++) {
+    const a = (i / steps) * Math.PI * 2;
+    const ca = Math.cos(a), sa = Math.sin(a);
+    const x = cx + Math.sign(ca) * Math.pow(Math.abs(ca), 2 / n) * r;
+    const y = cy + Math.sign(sa) * Math.pow(Math.abs(sa), 2 / n) * r;
     i ? g.lineTo(x, y) : g.moveTo(x, y);
   }
-  g.stroke();
+  g.closePath();
 }
 
 const THUMB_SHAPES = [
-  shCircle, shTriangle, shPolygon(6), shPolygon(8),
-  shStar(5, 0.45), shStar(8, 0.5), shTarget, shFlower, shSun,
-  shCrescent, shArcs, shSquares, shAsterisk, shSemicircle, shPieSplit, shSquiggle,
+  pathCircle,
+  pathPolygon(3, -Math.PI / 2),   // triangle (point up)
+  pathPolygon(4, 0),              // diamond
+  pathPolygon(4, Math.PI / 4),    // square
+  pathPolygon(5, -Math.PI / 2),   // pentagon
+  pathPolygon(6, 0),              // hexagon
+  pathStar(5, 0.46, -Math.PI / 2),
+  pathStar(6, 0.5, 0),
+  pathTrapezoid,
+  pathSemicircle,
+  pathSquircle,
 ];
 
 function makeThumb(f) {
@@ -354,36 +273,38 @@ function makeThumb(f) {
 
   const seed = Math.floor(f.jag * 9973) ^ Math.floor(f.dur * 7919) ^ Math.floor(f.freq * 31) ^ Math.floor(f.rate * 6151);
   const rng = mulberry32(seed);
-  const color = INKS.find((i) => i.key === f.color).hex;
 
-  // Draw the shape on its own layer so the grain can punch holes only where
-  // the ink is, letting the gray ground show through as speckle.
-  const layer = document.createElement('canvas');
-  layer.width = layer.height = size;
-  const sg = layer.getContext('2d');
-  sg.fillStyle = sg.strokeStyle = color;
-  sg.lineJoin = 'round';
+  // Transparent ground (dots only) so the pad's own gray shows through, and
+  // the square renders letterboxed via object-fit:contain without cropping.
+  const cx = size / 2, cy = size / 2, R = size * 0.44;
   const shape = THUMB_SHAPES[Math.floor(rng() * THUMB_SHAPES.length)];
-  shape(sg, size / 2, size / 2, size * 0.36, rng() * Math.PI * 2);
 
-  // Dotted grain: punch a jittered field of tiny holes through the ink.
-  sg.globalCompositeOperation = 'destination-out';
-  const stepPx = 4.4;
-  for (let y = 0; y < size; y += stepPx) {
-    for (let x = 0; x < size; x += stepPx) {
-      if (rng() > 0.5) continue;
-      const jx = x + (rng() - 0.5) * stepPx;
-      const jy = y + (rng() - 0.5) * stepPx;
-      sg.beginPath();
-      sg.arc(jx, jy, 1.2 + rng() * 0.9, 0, Math.PI * 2);
-      sg.fill();
+  // Rotate the shape and its halftone grid together by a small angle so tiles
+  // look hand-placed rather than mechanically axis-aligned.
+  g.save();
+  g.translate(cx, cy);
+  g.rotate((rng() - 0.5) * 0.6);
+  g.translate(-cx, -cy);
+  shape(g, cx, cy, R);
+  g.clip();
+
+  // Black halftone: dots on a regular grid, radius following a radial falloff
+  // (large at center → tiny at the edges). Grid runs past the canvas bounds so
+  // it still fills after the rotation above.
+  g.fillStyle = '#111';
+  const cell = size / 21, half = cell / 2, maxDist = size * 0.52;
+  for (let y = -size * 0.4; y < size * 1.4; y += cell) {
+    for (let x = -size * 0.4; x < size * 1.4; x += cell) {
+      const d = Math.hypot(x - cx, y - cy);
+      const tt = Math.min(1, d / maxDist);
+      const rr = half * (0.1 + 0.82 * Math.pow(1 - tt, 1.5));
+      if (rr < 0.35) continue;
+      g.beginPath();
+      g.arc(x, y, rr, 0, Math.PI * 2);
+      g.fill();
     }
   }
-  sg.globalCompositeOperation = 'source-over';
-
-  g.fillStyle = THUMB_BG_HEX;
-  g.fillRect(0, 0, size, size);
-  g.drawImage(layer, 0, 0);
+  g.restore();
 
   return t.toDataURL('image/png');
 }

@@ -68,19 +68,20 @@ The same features are serialized into the prompt shown on the LCD:
   (`reading sketch` → `sending prompt to sfx model` → `rendering audio`), fills the
   next empty pad with the sound, a generated thumbnail, and its prompt, then
   plays it with an e-ink refresh flash.
-- **Four pads (P1–P4)** — tap to play; each shows a generative riso-shape
+- **Four pads (P1–P4)** — tap to play; each shows a generative halftone
   thumbnail, an ink LED, and a family tag (SUB / IMPACT / TONE / TEXTR) plus
-  pitch offset. The thumbnail is a single bold shape drawn from a ~16-shape
-  library modelled on classic riso geometry (circle, triangle, polygon, star,
-  sunburst, flower, target rings, crescent, arcs, nested squares, asterisk,
-  semicircle, pie-split, squiggle) rendered in the sketch's dominant ink color
-  on a cold-gray ground. A dotted grain texture
-  is punched through the shape (a jittered field of tiny holes, letting the
-  gray show through as riso speckle). The shape and grain are seeded from the
-  sketch's own features (jaggedness, duration, pitch, flutter rate), so one
-  sketch always regenerates the same motif and different sketches read as
-  distinct. This replaced an earlier canvas snapshot of the sketch, which
-  looked blurry at pad size.
+  pitch offset. The thumbnail is a single solid shape drawn from a library of
+  ~11 forms (circle, triangle, diamond, square, pentagon, hexagon, 5- and
+  6-point stars, trapezoid, semicircle, squircle), filled with a **black
+  halftone**: a grid of dots clipped to the shape, large in the center and
+  shrinking toward the edges (a radial falloff). The shape and its dot grid
+  are rotated together by a small random angle so tiles look hand-placed, and
+  it's rendered transparent (dots only) and centered so `object-fit: contain`
+  shows the whole shape on the pad's own gray ground — no cropping. Everything
+  is seeded from the sketch's own features (jaggedness, duration, pitch,
+  flutter rate), so one sketch always regenerates the same motif and different
+  sketches read as distinct. This replaced an earlier canvas snapshot of the
+  sketch, which looked blurry at pad size.
 - **Pad controls** — pitch fader (±12 semitones), DEL to clear a slot.
 - **Step sequencer (SEQ)** — a shared master clock (40–240 BPM) and a 16-step
   grid (one row per pad) let you place pads on exact beats relative to each
@@ -123,7 +124,7 @@ function:
   centered card above ~900px wide), and each pane scrolls internally if its
   content exceeds the device's height
 - `app.js` — stroke capture (wide multiply-blended riso strokes), feature
-  analysis, prompt compiler, generative riso-shape thumbnails, AI-fetch +
+  analysis, prompt compiler, generative black-halftone shape thumbnails, AI-fetch +
   trim, Tone.js fallback synth, pad/pitch state, step-sequencer clock and
   scheduling
 - `vendor/tone.js` — the [Tone.js](https://tonejs.github.io) UMD build,
