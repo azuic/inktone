@@ -276,7 +276,7 @@ function makeThumb(f) {
 
   // Transparent ground (dots only) so the pad's own gray shows through, and
   // the square renders letterboxed via object-fit:contain without cropping.
-  const cx = size / 2, cy = size / 2, R = size * 0.44;
+  const cx = size / 2, cy = size / 2, R = size * 0.46;
   const shape = THUMB_SHAPES[Math.floor(rng() * THUMB_SHAPES.length)];
 
   // Rotate the shape and its halftone grid together by a small angle so tiles
@@ -288,17 +288,18 @@ function makeThumb(f) {
   shape(g, cx, cy, R);
   g.clip();
 
-  // Black halftone: dots on a regular grid, radius following a radial falloff
-  // (large at center → tiny at the edges). Grid runs past the canvas bounds so
-  // it still fills after the rotation above.
+  // Black halftone: dots on a regular grid, larger in the center and smaller
+  // toward the shape's edge — but the edge dots stay clearly visible (min ~40%
+  // of the cell) so the silhouette still reads as a star / triangle / square
+  // rather than fading into a featureless blob. The falloff spans the shape's
+  // own radius R. Grid runs past the canvas bounds so it still fills after the
+  // rotation above.
   g.fillStyle = '#111';
-  const cell = size / 21, half = cell / 2, maxDist = size * 0.52;
+  const cell = size / 20, half = cell / 2;
   for (let y = -size * 0.4; y < size * 1.4; y += cell) {
     for (let x = -size * 0.4; x < size * 1.4; x += cell) {
-      const d = Math.hypot(x - cx, y - cy);
-      const tt = Math.min(1, d / maxDist);
-      const rr = half * (0.1 + 0.82 * Math.pow(1 - tt, 1.5));
-      if (rr < 0.35) continue;
+      const tt = Math.min(1, Math.hypot(x - cx, y - cy) / R);
+      const rr = half * (0.4 + 0.55 * Math.pow(1 - tt, 1.1));
       g.beginPath();
       g.arc(x, y, rr, 0, Math.PI * 2);
       g.fill();
