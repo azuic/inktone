@@ -66,8 +66,9 @@ GitHub for source of truth, Vercel for hosting, CDN, and the function runtime.
   check — a flexbox shrink bug hid the whole ink row once)
 - Overlapping strokes of two different inks show a visibly different third
   color where they cross (multiply blend), not just one drawn over the other
-- A generated pad shows a crisp geometric riso-shape thumbnail, not a blurry
-  photo of the sketch
+- A generated pad shows a single bold riso shape with dotted grain in the
+  sketch's dominant ink color on a cold-gray ground (not a blurry photo, not
+  the cream paper)
 - Mobile portrait shows the "ROTATE TO LANDSCAPE" hint, not the device;
   mobile landscape and desktop both show the two-pane device directly
 - Each pane (sketch, pads) scrolls independently if its content is taller

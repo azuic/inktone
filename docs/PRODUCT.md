@@ -19,17 +19,19 @@ and free even when AI mode is off.
 
 ### Ink color → timbre family
 
-Ink colors are a small risograph palette — flat, saturated hues close to real
-Riso ink swatches, rather than the original muted UI-neutral set:
+The four inks are the classic vibrant risograph spot colors (Blue, Yellow,
+Orange, Fluorescent Pink):
 
-| Ink   | Hex       | Timbre                                                  |
-|-------|-----------|---------------------------------------------------------|
-| Black | `#0D0D0D` | Deep sub drone — dual detuned sine sub-bass, long decay |
-| Red   | `#F0523D` | Metallic impact — band-passed noise burst + pitch-drop thump |
-| Blue  | `#0078BF` | Resonant tone — detuned triangle pad with LFO vibrato   |
-| Ochre | `#D9A429` | Grainy texture — band-passed noise with wobbling filter |
+| Ink    | Hex       | Timbre                                                  |
+|--------|-----------|---------------------------------------------------------|
+| Blue   | `#2FA8DE` | Resonant tone — detuned triangle pad with LFO vibrato   |
+| Yellow | `#F4C20D` | Grainy texture — band-passed noise with wobbling filter |
+| Orange | `#F15A2B` | Metallic impact — band-passed noise burst + pitch-drop thump |
+| Pink   | `#F0509E` | Deep sub drone — dual detuned sine sub-bass, long decay |
 
 If a sketch mixes inks, the color with the greatest total drawn length wins.
+Strokes are multiply-blended, so overlapping inks mix like overlapping riso
+passes on paper (blue × yellow → green, orange × pink → red).
 
 ### Stroke geometry → sound parameters
 
@@ -69,13 +71,17 @@ The same features are serialized into the prompt shown on the LCD:
   plays it with an e-ink refresh flash.
 - **Four pads (P1–P4)** — tap to play; each shows a generative riso-shape
   thumbnail, an ink LED, and a family tag (SUB / IMPACT / TONE / TEXTR) plus
-  pitch offset. The thumbnail is 2-3 overlapping flat shapes (circle,
-  triangle, ring, star, semicircle) in the pad's ink color plus one or two
-  hue-shifted companions, multiply-blended like the sketch strokes — seeded
-  from the sketch's own features (jaggedness, duration, pitch, flutter rate)
-  so the same sketch always regenerates the same motif, and different
-  sketches read as visually distinct. This replaced an earlier canvas
-  snapshot of the sketch, which looked blurry at pad size.
+  pitch offset. The thumbnail is a single bold shape drawn from a ~16-shape
+  library modelled on classic riso geometry (circle, triangle, polygon, star,
+  sunburst, flower, target rings, crescent, arcs, nested squares, asterisk,
+  semicircle, pie-split, squiggle) rendered in the sketch's dominant ink color
+  on a cold-gray ground — no cream/yellow paper here. A dotted grain texture
+  is punched through the shape (a jittered field of tiny holes, letting the
+  gray show through as riso speckle). The shape and grain are seeded from the
+  sketch's own features (jaggedness, duration, pitch, flutter rate), so one
+  sketch always regenerates the same motif and different sketches read as
+  distinct. This replaced an earlier canvas snapshot of the sketch, which
+  looked blurry at pad size.
 - **Pad controls** — pitch fader (±12 semitones), DEL to clear a slot.
 - **Step sequencer (SEQ)** — a shared master clock (40–240 BPM) and a 16-step
   grid (one row per pad) let you place pads on exact beats relative to each

@@ -1,17 +1,19 @@
 'use strict';
 
-// Risograph ink colors — flat, saturated hues close to real Riso ink swatches.
-// Strokes are drawn with a multiply blend (see drawStroke), so overlapping
-// inks mix into a third color the way overlapping riso passes do on paper.
+// Vibrant risograph ink colors (Blue / Yellow / Orange / Fluorescent Pink),
+// the four classic Riso spot inks. Strokes are drawn with a multiply blend
+// (see drawStroke), so overlapping inks mix into a third color the way
+// overlapping riso passes do on paper: blue×yellow→green, orange×pink→red.
 const INKS = [
-  { key: 'black', hex: '#0D0D0D', word: 'deep sub drone', tag: 'SUB' },
-  { key: 'red', hex: '#F0523D', word: 'metallic impact', tag: 'IMPACT' },
-  { key: 'blue', hex: '#0078BF', word: 'resonant tone', tag: 'TONE' },
-  { key: 'ochre', hex: '#D9A429', word: 'grainy texture', tag: 'TEXTR' },
+  { key: 'blue', hex: '#2FA8DE', word: 'resonant tone', tag: 'TONE' },
+  { key: 'yellow', hex: '#F4C20D', word: 'grainy texture', tag: 'TEXTR' },
+  { key: 'orange', hex: '#F15A2B', word: 'metallic impact', tag: 'IMPACT' },
+  { key: 'pink', hex: '#F0509E', word: 'deep sub drone', tag: 'SUB' },
 ];
 
 const PAPER_HEX = '#F2E9D8';
 const PAPER_GRID_HEX = '#D8CDB0';
+const THUMB_BG_HEX = '#E5E7EA'; // pad thumbnail ground: pure cold gray, not riso paper
 const STROKE_WIDTH = 12;
 const STROKE_ALPHA = 0.92;
 
@@ -24,7 +26,7 @@ const canvas = $('paper');
 const ctx = canvas.getContext('2d');
 
 const state = {
-  ink: 'black',
+  ink: 'blue',
   generating: false,
   aiMode: true,                  // true: try ElevenLabs Music API, fall back to local synth
   pads: Array(SLOTS).fill(null), // {params, prompt, thumb, color, pitch, buffer}
@@ -173,10 +175,14 @@ function promptFor(f) {
 }
 
 /* ---- pad art ----
- * Pad thumbnails are generative riso-style geometry (2-3 overlapping shapes,
- * multiply-blended) rather than a snapshot of the canvas — a downscaled
- * photo of a thin sketch line reads as a blurry smear at pad size, while a
- * few bold flat shapes stay crisp and match the ink's riso palette.
+ * Each generated pad shows a single bold riso shape (drawn from a small
+ * library modelled on classic riso geometry — circle, star, sunburst,
+ * flower, rings, crescent, etc.) in the sketch's dominant ink color, on a
+ * cold-gray ground. The shape is given a dotted grain texture by punching
+ * a jittered field of tiny holes through it, so the gray shows through as
+ * riso-print speckle. Everything is seeded from the sketch's own features,
+ * so one sketch always regenerates the same motif and different sketches
+ * read as distinct.
  */
 
 function mulberry32(seed) {
@@ -189,110 +195,196 @@ function mulberry32(seed) {
   };
 }
 
-function hexToHsl(hex) {
-  const n = parseInt(hex.slice(1), 16);
-  const r = ((n >> 16) & 255) / 255, g = ((n >> 8) & 255) / 255, b = (n & 255) / 255;
-  const max = Math.max(r, g, b), min = Math.min(r, g, b);
-  let h = 0, s = 0;
-  const l = (max + min) / 2;
-  const d = max - min;
-  if (d) {
-    s = d / (1 - Math.abs(2 * l - 1));
-    if (max === r) h = ((g - b) / d) % 6;
-    else if (max === g) h = (b - r) / d + 2;
-    else h = (r - g) / d + 4;
-    h *= 60;
-    if (h < 0) h += 360;
-  }
-  return [h, s, l];
-}
-
-function hslToHex(h, s, l) {
-  const c = (1 - Math.abs(2 * l - 1)) * s;
-  const x = c * (1 - Math.abs(((h / 60) % 2) - 1));
-  const m = l - c / 2;
-  let [r, g, b] = h < 60 ? [c, x, 0] : h < 120 ? [x, c, 0] : h < 180 ? [0, c, x] : h < 240 ? [0, x, c] : h < 300 ? [x, 0, c] : [c, 0, x];
-  const to255 = (v) => Math.round((v + m) * 255).toString(16).padStart(2, '0');
-  return `#${to255(r)}${to255(g)}${to255(b)}`;
-}
-
-function riffColor(hex, hueShift, satMul, lightMul) {
-  const [h, s, l] = hexToHsl(hex);
-  return hslToHex((h + hueShift + 360) % 360, Math.min(1, s * satMul), Math.min(0.92, Math.max(0.15, l * lightMul)));
-}
-
-function shapeCircle(g, cx, cy, r) {
+// Each shape draws centered at (cx,cy) within radius r, using the context's
+// current fill/stroke style (the ink color). rot is a base rotation.
+function shCircle(g, cx, cy, r) {
   g.beginPath();
   g.arc(cx, cy, r, 0, Math.PI * 2);
   g.fill();
 }
-function shapeTriangle(g, cx, cy, r, rot) {
+function shTriangle(g, cx, cy, r, rot) {
   g.beginPath();
   for (let i = 0; i < 3; i++) {
-    const a = rot + (i / 3) * Math.PI * 2;
+    const a = rot - Math.PI / 2 + (i / 3) * Math.PI * 2;
     const x = cx + Math.cos(a) * r, y = cy + Math.sin(a) * r;
     i ? g.lineTo(x, y) : g.moveTo(x, y);
   }
   g.closePath();
   g.fill();
 }
-function shapeRing(g, cx, cy, r) {
-  g.lineWidth = r * 0.55;
-  g.beginPath();
-  g.arc(cx, cy, r * 0.7, 0, Math.PI * 2);
-  g.stroke();
+function shPolygon(sides) {
+  return (g, cx, cy, r, rot) => {
+    g.beginPath();
+    for (let i = 0; i < sides; i++) {
+      const a = rot + (i / sides) * Math.PI * 2;
+      const x = cx + Math.cos(a) * r, y = cy + Math.sin(a) * r;
+      i ? g.lineTo(x, y) : g.moveTo(x, y);
+    }
+    g.closePath();
+    g.fill();
+  };
 }
-function shapeStar(g, cx, cy, r, rot) {
-  const points = 6;
-  g.beginPath();
-  for (let i = 0; i < points * 2; i++) {
-    const a = rot + (i / (points * 2)) * Math.PI * 2;
-    const rr = i % 2 ? r * 0.45 : r;
-    const x = cx + Math.cos(a) * rr, y = cy + Math.sin(a) * rr;
-    i ? g.lineTo(x, y) : g.moveTo(x, y);
+function shStar(points, innerRatio) {
+  return (g, cx, cy, r, rot) => {
+    g.beginPath();
+    for (let i = 0; i < points * 2; i++) {
+      const a = rot + (i / (points * 2)) * Math.PI * 2;
+      const rr = i % 2 ? r * innerRatio : r;
+      const x = cx + Math.cos(a) * rr, y = cy + Math.sin(a) * rr;
+      i ? g.lineTo(x, y) : g.moveTo(x, y);
+    }
+    g.closePath();
+    g.fill();
+  };
+}
+function shTarget(g, cx, cy, r) {
+  const rings = 3;
+  g.lineWidth = r / (rings * 2 + 0.5);
+  for (let i = rings; i >= 1; i--) {
+    g.beginPath();
+    g.arc(cx, cy, (r * i) / rings - g.lineWidth * 0.5, 0, Math.PI * 2);
+    g.stroke();
   }
-  g.closePath();
+  g.beginPath();
+  g.arc(cx, cy, g.lineWidth * 0.9, 0, Math.PI * 2);
   g.fill();
 }
-function shapeSemicircle(g, cx, cy, r, rot) {
+function shFlower(g, cx, cy, r, rot) {
+  const petals = 6;
+  const pr = r * 0.42;
+  for (let i = 0; i < petals; i++) {
+    const a = rot + (i / petals) * Math.PI * 2;
+    g.beginPath();
+    g.arc(cx + Math.cos(a) * r * 0.55, cy + Math.sin(a) * r * 0.55, pr, 0, Math.PI * 2);
+    g.fill();
+  }
+  g.beginPath();
+  g.arc(cx, cy, r * 0.34, 0, Math.PI * 2);
+  g.fill();
+}
+function shSun(g, cx, cy, r, rot) {
+  shStar(12, 0.62)(g, cx, cy, r, rot);
+  g.beginPath();
+  g.arc(cx, cy, r * 0.5, 0, Math.PI * 2);
+  g.fill();
+}
+function shCrescent(g, cx, cy, r, rot) {
+  g.beginPath();
+  g.arc(cx, cy, r, 0, Math.PI * 2);
+  g.fill();
+  const prev = g.globalCompositeOperation;
+  g.globalCompositeOperation = 'destination-out';
+  g.beginPath();
+  g.arc(cx + Math.cos(rot) * r * 0.55, cy + Math.sin(rot) * r * 0.55, r * 0.86, 0, Math.PI * 2);
+  g.fill();
+  g.globalCompositeOperation = prev;
+}
+function shArcs(g, cx, cy, r, rot) {
+  const rings = 3;
+  g.lineWidth = r / (rings * 2 + 1);
+  g.lineCap = 'round';
+  for (let i = rings; i >= 1; i--) {
+    g.beginPath();
+    g.arc(cx, cy + r * 0.35, (r * i) / rings, rot + Math.PI, rot + Math.PI * 2);
+    g.stroke();
+  }
+}
+function shSquares(g, cx, cy, r) {
+  const rings = 3;
+  g.lineWidth = r / (rings * 2);
+  for (let i = rings; i >= 1; i--) {
+    const s = (r * i) / rings;
+    g.strokeRect(cx - s, cy - s, s * 2, s * 2);
+  }
+}
+function shAsterisk(g, cx, cy, r, rot) {
+  const arms = 6;
+  g.lineWidth = r * 0.26;
+  g.lineCap = 'round';
+  for (let i = 0; i < arms; i++) {
+    const a = rot + (i / arms) * Math.PI;
+    g.beginPath();
+    g.moveTo(cx - Math.cos(a) * r, cy - Math.sin(a) * r);
+    g.lineTo(cx + Math.cos(a) * r, cy + Math.sin(a) * r);
+    g.stroke();
+  }
+}
+function shSemicircle(g, cx, cy, r, rot) {
   g.beginPath();
   g.moveTo(cx, cy);
   g.arc(cx, cy, r, rot, rot + Math.PI);
   g.closePath();
   g.fill();
 }
+function shPieSplit(g, cx, cy, r, rot) {
+  for (const off of [0, Math.PI]) {
+    g.beginPath();
+    g.moveTo(cx, cy);
+    g.arc(cx, cy, r, rot + off, rot + off + Math.PI / 2);
+    g.closePath();
+    g.fill();
+  }
+}
+function shSquiggle(g, cx, cy, r, rot) {
+  g.lineWidth = r * 0.3;
+  g.lineCap = 'round';
+  g.lineJoin = 'round';
+  g.beginPath();
+  const w = r * 1.7;
+  for (let i = 0; i <= 40; i++) {
+    const t = i / 40;
+    const x = cx - w / 2 + t * w;
+    const y = cy + Math.sin(rot + t * Math.PI * 3) * r * 0.55;
+    i ? g.lineTo(x, y) : g.moveTo(x, y);
+  }
+  g.stroke();
+}
 
-const THUMB_SHAPES = [shapeCircle, shapeTriangle, shapeRing, shapeStar, shapeSemicircle];
+const THUMB_SHAPES = [
+  shCircle, shTriangle, shPolygon(6), shPolygon(8),
+  shStar(5, 0.45), shStar(8, 0.5), shTarget, shFlower, shSun,
+  shCrescent, shArcs, shSquares, shAsterisk, shSemicircle, shPieSplit, shSquiggle,
+];
 
 function makeThumb(f) {
-  const size = 160;
+  const size = 240;
   const t = document.createElement('canvas');
   t.width = size;
   t.height = size;
   const g = t.getContext('2d');
-  g.fillStyle = PAPER_HEX;
-  g.fillRect(0, 0, size, size);
 
   const seed = Math.floor(f.jag * 9973) ^ Math.floor(f.dur * 7919) ^ Math.floor(f.freq * 31) ^ Math.floor(f.rate * 6151);
   const rng = mulberry32(seed);
-  const base = INKS.find((i) => i.key === f.color).hex;
-  const palette = [
-    base,
-    riffColor(base, 35 + rng() * 55, 0.95, 1.12),
-    riffColor(base, -(50 + rng() * 60), 0.9, 0.9),
-  ];
+  const color = INKS.find((i) => i.key === f.color).hex;
 
-  g.globalCompositeOperation = 'multiply';
-  const n = 2 + Math.floor(rng() * 2);
-  for (let i = 0; i < n; i++) {
-    const fn = THUMB_SHAPES[Math.floor(rng() * THUMB_SHAPES.length)];
-    g.fillStyle = g.strokeStyle = palette[Math.floor(rng() * palette.length)];
-    const cx = size * 0.5 + (rng() - 0.5) * size * 0.55;
-    const cy = size * 0.5 + (rng() - 0.5) * size * 0.55;
-    const r = size * (0.3 + rng() * 0.32);
-    fn(g, cx, cy, r, rng() * Math.PI * 2);
+  // Draw the shape on its own layer so the grain can punch holes only where
+  // the ink is, letting the gray ground show through as speckle.
+  const layer = document.createElement('canvas');
+  layer.width = layer.height = size;
+  const sg = layer.getContext('2d');
+  sg.fillStyle = sg.strokeStyle = color;
+  sg.lineJoin = 'round';
+  const shape = THUMB_SHAPES[Math.floor(rng() * THUMB_SHAPES.length)];
+  shape(sg, size / 2, size / 2, size * 0.36, rng() * Math.PI * 2);
+
+  // Dotted grain: punch a jittered field of tiny holes through the ink.
+  sg.globalCompositeOperation = 'destination-out';
+  const stepPx = 4.4;
+  for (let y = 0; y < size; y += stepPx) {
+    for (let x = 0; x < size; x += stepPx) {
+      if (rng() > 0.5) continue;
+      const jx = x + (rng() - 0.5) * stepPx;
+      const jy = y + (rng() - 0.5) * stepPx;
+      sg.beginPath();
+      sg.arc(jx, jy, 1.2 + rng() * 0.9, 0, Math.PI * 2);
+      sg.fill();
+    }
   }
-  g.globalCompositeOperation = 'source-over';
+  sg.globalCompositeOperation = 'source-over';
+
+  g.fillStyle = THUMB_BG_HEX;
+  g.fillRect(0, 0, size, size);
+  g.drawImage(layer, 0, 0);
 
   return t.toDataURL('image/png');
 }
@@ -348,7 +440,7 @@ function play(i, when) {
   out.gain.value = 0.7;
   out.connect(a.destination);
 
-  if (f.color === 'red') {
+  if (f.color === 'orange') {
     // filtered noise burst + pitch-drop thump
     const n = a.createBufferSource();
     n.buffer = noiseBuf();
@@ -397,7 +489,7 @@ function play(i, when) {
       o.start(t);
       o.stop(t + dur);
     }
-  } else if (f.color === 'ochre') {
+  } else if (f.color === 'yellow') {
     // band-passed noise with wobbling filter
     const n = a.createBufferSource();
     n.buffer = noiseBuf();
@@ -421,7 +513,7 @@ function play(i, when) {
     n.start(t);
     n.stop(t + dur);
   } else {
-    // black: deep sub drone, dual detuned sines
+    // pink: deep sub drone, dual detuned sines
     const o = a.createOscillator();
     o.frequency.value = Math.max(35, fr * 0.5);
     const o2 = a.createOscillator();

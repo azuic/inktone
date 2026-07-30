@@ -18,13 +18,15 @@ local Web Audio synth — no backend, no keys, no network.
 
 ## Mapping
 
-- **Ink → timbre**: black = sub drone · red = metallic impact · blue = resonant
-  tone · ochre = grainy texture (most-drawn color wins). Overlapping strokes
-  multiply-blend into a third riso-style color, same as overlapping ink passes.
+- **Ink → timbre** (vibrant riso inks): blue = resonant tone · yellow = grainy
+  texture · orange = metallic impact · pink = deep sub drone (most-drawn color
+  wins). Overlapping strokes multiply-blend into a third riso color, same as
+  overlapping ink passes (blue × yellow → green, orange × pink → red).
 - **Height on paper** → pitch (80–880 Hz) · **drawn length** → duration
   (0.25–1.6 s) · **speed** → flutter rate · **jaggedness** → grit/detune
-- Each generated pad gets a small generative riso-shape thumbnail (not a
-  photo of the sketch) seeded from that sketch's own features.
+- Each generated pad gets a single bold riso shape with a dotted grain
+  texture, in the sketch's dominant ink color on cold gray — seeded from that
+  sketch's own features (not a photo of the sketch).
 
 ## Run locally
 
