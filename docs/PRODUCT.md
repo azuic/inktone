@@ -56,8 +56,8 @@ The same features are serialized into the prompt shown on the LCD:
 
 ## Features
 
-- **Sketch paper** — pointer-drawn canvas on a cream riso-paper ground with a
-  warm dot grid, four riso ink swatches, UNDO and CLR. Strokes are wide
+- **Sketch paper** — pointer-drawn canvas on a cold-gray ground with a dot
+  grid, four riso ink swatches, UNDO and CLR. Strokes are wide
   (12px, round caps) and composited with a `multiply` blend at less than
   full opacity, the way overlapping riso ink passes actually look: two
   crossing strokes mix into a visibly different third color rather than one
@@ -75,7 +75,7 @@ The same features are serialized into the prompt shown on the LCD:
   library modelled on classic riso geometry (circle, triangle, polygon, star,
   sunburst, flower, target rings, crescent, arcs, nested squares, asterisk,
   semicircle, pie-split, squiggle) rendered in the sketch's dominant ink color
-  on a cold-gray ground — no cream/yellow paper here. A dotted grain texture
+  on a cold-gray ground. A dotted grain texture
   is punched through the shape (a jittered field of tiny holes, letting the
   gray show through as riso speckle). The shape and grain are seeded from the
   sketch's own features (jaggedness, duration, pitch, flutter rate), so one
@@ -95,10 +95,13 @@ The same features are serialized into the prompt shown on the LCD:
 ## Layout
 
 Tink-on is a landscape-shaped device: a masthead bar over two side-by-side
-panes — a dedicated sketch pane (paper, ink row, prompt/GENERATE) on the
-left, and a pads/controls/sequencer pane on the right. Each pane scrolls
-independently if its content doesn't fit the device's height, so a short
-screen never has to scroll the sketch pane to reach the sequencer.
+panes. The left pane holds everything tied to a single sound — paper, ink
+row, prompt/GENERATE, and the pad controls (pitch fader, DEL). The right
+pane is the pad grid over the step sequencer, and is a flex column: the
+sequencer keeps its natural height and the pad grid flexes to fill the rest,
+so the right pane never has to scroll regardless of device height. (The
+left pane can still scroll on a short screen, since it holds the tall sketch
+canvas.)
 
 On a phone held upright (portrait), the two-pane layout doesn't have room to
 work, so the device is hidden and a "ROTATE TO LANDSCAPE" hint is shown
@@ -113,8 +116,8 @@ below it.
 Static frontend, zero npm dependencies, zero build step, plus one serverless
 function:
 
-- `index.html` — masthead + two-pane layout (sketch pane, pads/controls/
-  sequencer pane), plus the portrait rotate-hint screen
+- `index.html` — masthead + two-pane layout (sketch + controls pane, pad
+  grid / sequencer pane), plus the portrait rotate-hint screen
 - `styles.css` — design tokens and riso/e-ink styling; the device is
   landscape-shaped at every breakpoint (full-bleed on narrow/short viewports,
   centered card above ~900px wide), and each pane scrolls internally if its

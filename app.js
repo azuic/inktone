@@ -11,9 +11,9 @@ const INKS = [
   { key: 'pink', hex: '#F0509E', word: 'deep sub drone', tag: 'SUB' },
 ];
 
-const PAPER_HEX = '#F2E9D8';
-const PAPER_GRID_HEX = '#D8CDB0';
-const THUMB_BG_HEX = '#E5E7EA'; // pad thumbnail ground: pure cold gray, not riso paper
+const PAPER_HEX = '#f4f5f7'; // sketch canvas ground: cold gray
+const PAPER_GRID_HEX = '#c4c8cf';
+const THUMB_BG_HEX = '#e5e7ea'; // pad thumbnail ground: cold gray
 const STROKE_WIDTH = 12;
 const STROKE_ALPHA = 0.92;
 

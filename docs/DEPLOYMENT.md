@@ -67,8 +67,10 @@ GitHub for source of truth, Vercel for hosting, CDN, and the function runtime.
 - Overlapping strokes of two different inks show a visibly different third
   color where they cross (multiply blend), not just one drawn over the other
 - A generated pad shows a single bold riso shape with dotted grain in the
-  sketch's dominant ink color on a cold-gray ground (not a blurry photo, not
-  the cream paper)
+  sketch's dominant ink color on a cold-gray ground (not a blurry photo)
+- Surfaces are cold gray (canvas, step cells, pad tiles) — no cream/yellow
+- Right pane (pad grid + sequencer) fits without scrolling; the pitch/DEL
+  control sits in the left pane under GENERATE
 - Mobile portrait shows the "ROTATE TO LANDSCAPE" hint, not the device;
   mobile landscape and desktop both show the two-pane device directly
 - Each pane (sketch, pads) scrolls independently if its content is taller

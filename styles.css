@@ -1,8 +1,8 @@
 :root {
   --ink: #1c1d20;
   --chassis: #eceef0;
-  --paper: #F2E9D8;
-  --paper-grid: #D8CDB0;
+  --paper: #f4f5f7;
+  --paper-grid: #c4c8cf;
   --page: #dfe0e2;
   --muted: #676b72;
   --faint: #a3a7ae;
@@ -132,7 +132,14 @@ body {
   -webkit-overflow-scrolling: touch;
 }
 .pane-sketch { border-right: 1px solid var(--hairline); }
-.pane-pads { flex: 1.15; }
+/* The pads pane is a flex column: the sequencer keeps its natural height and
+   the pad grid flexes to fill whatever's left, so the pane never has to
+   scroll regardless of device height. */
+.pane-pads {
+  flex: 1.15;
+  display: flex;
+  flex-direction: column;
+}
 
 /* ---- paper ---- */
 
@@ -161,7 +168,7 @@ body {
 }
 .paper-empty > div {
   font: 400 10.5px var(--mono);
-  color: #96876a;
+  color: #878b93;
   letter-spacing: 1px;
   text-align: center;
   line-height: 1.9;
@@ -266,9 +273,11 @@ body {
 /* ---- pads ---- */
 
 .pad-grid {
+  flex: 1;
+  min-height: 0;
   display: grid;
   grid-template-columns: repeat(2, 1fr);
-  grid-auto-rows: 128px;
+  grid-template-rows: repeat(2, 1fr);
   gap: 10px;
   margin: 12px 14px 0;
 }
@@ -330,7 +339,7 @@ body {
   display: flex;
   align-items: center;
   gap: 12px;
-  margin: 12px 14px 0;
+  margin: 12px 14px 14px;
   padding: 10px 12px;
   border: 1px solid var(--hairline);
   border-radius: 12px;
@@ -370,6 +379,7 @@ body {
 /* ---- sequencer ---- */
 
 .seq-card {
+  flex: none;
   margin: 12px 14px 14px;
   border: 1px solid var(--hairline);
   border-radius: 12px;
@@ -436,6 +446,6 @@ body {
   border-radius: 2px;
   cursor: pointer;
 }
-.step.step-alt { background: #e9dcc0; }
+.step.step-alt { background: #e4e6e9; }
 .step.on { background: var(--ink); border-color: var(--ink); }
 .step.current { box-shadow: 0 0 0 1.5px var(--ink) inset; }

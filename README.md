@@ -6,8 +6,8 @@ into a synthesized sound on a four-pad sampler. Pitch it, place it on a
 16-step sequencer, play a beat.
 
 Tink-on is a landscape-shaped instrument, played sideways: on a phone, rotate
-to landscape to use it — a dedicated sketch pane sits beside the pads,
-controls, and sequencer.
+to landscape to use it — a sketch-and-controls pane sits beside the pad grid
+and step sequencer.
 
 **The drawing is the prompt**: every sketch compiles to a line like
 `fluttering jagged, gritty metallic impact, bright airy character, 0.8s`, sent
