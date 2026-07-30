@@ -274,12 +274,12 @@ function makeThumb(f) {
   const seed = Math.floor(f.jag * 9973) ^ Math.floor(f.dur * 7919) ^ Math.floor(f.freq * 31) ^ Math.floor(f.rate * 6151);
   const rng = mulberry32(seed);
 
-  // Transparent ground (dots only) so the pad's own gray shows through, and
+  // Transparent ground (strokes only) so the pad's own gray shows through, and
   // the square renders letterboxed via object-fit:contain without cropping.
   const cx = size / 2, cy = size / 2, R = size * 0.46;
   const shape = THUMB_SHAPES[Math.floor(rng() * THUMB_SHAPES.length)];
 
-  // Rotate the shape and its halftone grid together by a small angle so tiles
+  // Rotate the shape and its stroke field together by a small angle so tiles
   // look hand-placed rather than mechanically axis-aligned.
   g.save();
   g.translate(cx, cy);
@@ -288,21 +288,27 @@ function makeThumb(f) {
   shape(g, cx, cy, R);
   g.clip();
 
-  // Black halftone: dots on a regular grid, larger in the center and smaller
-  // toward the shape's edge — but the edge dots stay clearly visible (min ~40%
-  // of the cell) so the silhouette still reads as a star / triangle / square
-  // rather than fading into a featureless blob. The falloff spans the shape's
-  // own radius R. Grid runs past the canvas bounds so it still fills after the
-  // rotation above.
-  g.fillStyle = '#111';
-  const cell = size / 20, half = cell / 2;
+  // Field of short, discrete black strokes clipped to the shape. Each mark
+  // orients tangent to the circle around the shape's center (a swirling
+  // "gravity field"), like iron filings, so they snap into flowing lines that
+  // fill the silhouette. Strokes stay short (gaps between them) so they read
+  // as individual dashes rather than solid contour rings, with a little angle
+  // jitter so the field looks hand-placed.
+  g.strokeStyle = '#111';
+  g.lineWidth = 1.8;
+  g.lineCap = 'round';
+  const cell = size / 16;
   for (let y = -size * 0.4; y < size * 1.4; y += cell) {
     for (let x = -size * 0.4; x < size * 1.4; x += cell) {
-      const tt = Math.min(1, Math.hypot(x - cx, y - cy) / R);
-      const rr = half * (0.4 + 0.55 * Math.pow(1 - tt, 1.1));
+      const dx = x - cx, dy = y - cy;
+      const tt = Math.min(1, Math.hypot(dx, dy) / R);
+      const ang = Math.atan2(dy, dx) + Math.PI / 2 + (rng() - 0.5) * 0.3; // tangent + jitter
+      const len = cell * (0.3 + 0.12 * (1 - tt)); // half-length; < cell so marks stay separate
+      const ex = Math.cos(ang) * len, ey = Math.sin(ang) * len;
       g.beginPath();
-      g.arc(x, y, rr, 0, Math.PI * 2);
-      g.fill();
+      g.moveTo(x - ex, y - ey);
+      g.lineTo(x + ex, y + ey);
+      g.stroke();
     }
   }
   g.restore();

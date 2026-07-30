@@ -24,9 +24,10 @@ call is unavailable or fails, Tink-on falls back instantly to a local
   overlapping ink passes (blue × yellow → green, orange × pink → red).
 - **Height on paper** → pitch (80–880 Hz) · **drawn length** → duration
   (0.25–1.6 s) · **speed** → flutter rate · **jaggedness** → grit/detune
-- Each generated pad gets a single geometric shape filled with a black
-  halftone (dots large in the center, small at the edges), centered on the
-  pad's gray ground — seeded from that sketch's own features (not a photo).
+- Each generated pad gets a single geometric shape filled with a field of
+  short black strokes that swirl around its center like iron filings in a
+  gravity field, centered on the pad's gray ground — seeded from that
+  sketch's own features (not a photo).
 
 ## Run locally
 
