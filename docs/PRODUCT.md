@@ -55,8 +55,9 @@ The same features are serialized into the prompt shown on the LCD:
 
 ## Features
 
-- **Sketch paper** — a square pointer-drawn canvas on a cold-gray ground with
-  a dot grid, four riso ink swatches, UNDO and CLR. Strokes are wide
+- **Sketch paper** — a large, near-square pointer-drawn canvas that fills its
+  card edge to edge, on a cold-gray ground with a dot grid, four riso ink
+  swatches, UNDO and CLR. Strokes are wide
   (12px, round caps) and composited with a `multiply` blend at less than
   full opacity, the way overlapping riso ink passes actually look: two
   crossing strokes mix into a visibly different third color rather than one
@@ -93,9 +94,9 @@ The same features are serialized into the prompt shown on the LCD:
 ## Layout
 
 Tink-on is a landscape-shaped device: a masthead bar over two side-by-side
-panes. The left pane is the drawing side — a **square** sketch canvas (which
-flexes to fill the column height) with its ink row, over the prompt/GENERATE
-bar. The right pane stacks the 4×2 grid of eight square pads, the pad controls
+panes. The left pane is the drawing side — a large, near-square sketch canvas
+that fills its card edge to edge (flexing to fill the column height) with its
+ink row, over the prompt/GENERATE bar. The right pane stacks the 4×2 grid of eight square pads, the pad controls
 (selected-pad name, pitch fader, DEL), and the one-line transport, spread to
 fill the column. Both panes are the same height and fill their space; the pad
 size is capped on a short landscape phone so the right column never scrolls,
