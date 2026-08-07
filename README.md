@@ -2,12 +2,12 @@
 
 Sketch a sound. Draw on the paper with one of four risograph inks and Tink-on
 translates the sketch — its color, position, length, speed, and jaggedness —
-into a synthesized sound on a four-pad sampler. Pitch it, place it on a
-16-step sequencer, play a beat.
+into a synthesized sound on an eight-pad sampler. Pitch it, then play the pads
+live against a tempo transport to build a beat.
 
 Tink-on is a landscape-shaped instrument, played sideways: on a phone, rotate
-to landscape to use it — a sketch-and-controls pane sits beside the pad grid
-and step sequencer.
+to landscape to use it — a sketch-and-controls pane sits beside the pads and
+transport.
 
 **The drawing is the prompt**: every sketch compiles to a line like
 `fluttering jagged, gritty metallic impact, bright airy character, 0.8s`, sent
@@ -47,10 +47,11 @@ cp .env.example .env.local   # fill in ELEVENLABS_API_KEY
 vercel dev
 ```
 
-Keys `1`–`4` trigger pads. GENERATE always calls the ElevenLabs Sound Effects
-API and falls back to the Tone.js synth on any failure. The **SEQ** section is
-a shared 16-step clock (40–240 BPM) — toggle steps per pad and hit PLAY to
-place pads on exact beats relative to each other.
+Keys `1`–`8` trigger pads. GENERATE always calls the ElevenLabs Sound Effects
+API and falls back to the Tone.js synth on any failure. The **transport** is a
+one-line tempo/step indicator (40–240 BPM): PLAY sweeps a playhead across a
+16-step bar and ticks a metronome on each quarter beat, so you can play the
+eight pads live in time.
 
 ## Docs
 

@@ -68,26 +68,25 @@ The same features are serialized into the prompt shown on the LCD:
   (`reading sketch` → `sending prompt to sfx model` → `rendering audio`), fills the
   next empty pad with the sound, a generated thumbnail, and its prompt, then
   plays it with an e-ink refresh flash.
-- **Four pads (P1–P4)** — laid out as a row of four square displays; tap to
-  play. Each square is a **magnetic drawing board**: a coarse 12×12 grid of
-  rounded-square scatter units that pixelate the actual sketch. The sketch
-  canvas is contain-fit into the square, then sampled per cell — cells with
-  ink get an opaque unit, unsketched cells get a faint, semi-transparent one,
-  so the board reads as a low-res pixel snapshot of the drawing rather than an
-  abstract motif. Ink colors map to shades of black/gray by how much of each
-  was drawn: a single-color sketch is plain black, and a mix gets distinct
-  grays (most-drawn darkest). Below the board, an ink LED and a family tag
-  (SUB / IMPACT / TONE / TEXTR) plus pitch offset. This board replaced a run
-  of earlier thumbnail approaches — a blurry downscaled snapshot, then an
-  abstract generated shape — because a literal pixelation of what you drew
-  ties each pad directly to its sketch.
+- **Eight pads (P1–P8)** — laid out as a 4×2 grid of square displays; tap or
+  press 1–8 to play. Each square is a **magnetic drawing board**: a coarse
+  13×13 grid of small rounded-square scatter units that pixelate the actual
+  sketch. The sketch canvas is contain-fit into the square, then sampled per
+  cell — cells with ink get an opaque unit, unsketched cells get a very faint,
+  semi-transparent one, so the board reads as a low-res pixel snapshot of the
+  drawing rather than an abstract motif. Ink colors map to shades of
+  black/gray by how much of each was drawn: a single-color sketch is plain
+  black, and a mix gets distinct grays (most-drawn darkest). Below the board,
+  an ink LED and a family tag (SUB / IMPACT / TONE / TEXTR) plus pitch offset.
+  This board replaced a run of earlier thumbnail approaches — a blurry
+  downscaled snapshot, then an abstract generated shape — because a literal
+  pixelation of what you drew ties each pad directly to its sketch.
 - **Pad controls** — pitch fader (±12 semitones), DEL to clear a slot.
-- **Step sequencer (SEQ)** — a shared master clock (40–240 BPM) and a 16-step
-  grid (one row per pad) let you place pads on exact beats relative to each
-  other, rather than each pad looping independently on its own duration.
-  PLAY/STOP starts and stops the clock; a playhead outline sweeps across the
-  grid while running. Steps can be toggled whether or not PLAY is running,
-  and persist per pad slot even if that slot's sound is later regenerated.
+- **Transport** — a one-line tempo/step indicator (40–240 BPM). PLAY/STOP runs
+  a shared clock that sweeps a playhead across a 16-step bar and ticks a
+  metronome on each quarter beat, so you can play the pads live in time. It is
+  a timing reference, not a step grid — there is no per-pad step programming;
+  the pads are performed, not sequenced.
 - **Aesthetic** — e-ink instrument panel: IBM Plex Mono, `#eceef0` chassis,
   hairline `rgba(28,29,32,.22)` borders, invert-flash animations, blinking LCD cursor.
 
@@ -96,9 +95,9 @@ The same features are serialized into the prompt shown on the LCD:
 Tink-on is a landscape-shaped device: a masthead bar over two side-by-side
 panes. The left pane holds everything tied to a single sound — paper, ink
 row, prompt/GENERATE, and the pad controls (pitch fader, DEL). The right
-pane is a row of four square pads over the step sequencer, both kept at their
-natural size and vertically centered in the pane, so the right pane never has
-to scroll regardless of device height. (The
+pane is a 4×2 grid of eight square pads over the one-line transport, both kept
+at their natural size and vertically centered in the pane, so the right pane
+never has to scroll regardless of device height. (The
 left pane can still scroll on a short screen, since it holds the tall sketch
 canvas.)
 
@@ -116,7 +115,7 @@ Static frontend, one vendored library, zero build step, plus one serverless
 function:
 
 - `index.html` — masthead + two-pane layout (sketch + controls pane, pad
-  grid / sequencer pane), plus the portrait rotate-hint screen; loads
+  grid / transport pane), plus the portrait rotate-hint screen; loads
   `vendor/tone.js` before `app.js`
 - `styles.css` — design tokens and riso/e-ink styling; the device is
   landscape-shaped at every breakpoint (full-bleed on narrow/short viewports,
@@ -124,8 +123,7 @@ function:
   content exceeds the device's height
 - `app.js` — stroke capture (wide multiply-blended riso strokes), feature
   analysis, prompt compiler, magnetic-board pixel thumbnails, AI-fetch +
-  trim, Tone.js fallback synth, pad/pitch state, step-sequencer clock and
-  scheduling
+  trim, Tone.js fallback synth, pad/pitch state, transport clock + metronome
 - `vendor/tone.js` — the [Tone.js](https://tonejs.github.io) UMD build,
   committed to the repo rather than pulled from a CDN so the site stays
   self-contained and buildless (exposes the global `Tone`)
@@ -159,8 +157,8 @@ Music's 3s floor.
 - AI-generated audio plays through an `AudioBufferSourceNode` with
   `playbackRate` driven by the pitch fader (same ±12 semitone range as the
   synth path). Both AI and synth playback go through the same `play(i, when)`
-  path, which accepts an optional AudioContext time so the step sequencer can
-  schedule hits precisely ahead of now instead of just "play immediately."
+  path, which accepts an optional AudioContext time so the transport clock can
+  schedule its metronome precisely ahead of now instead of just "play immediately."
 
 This is a paid ElevenLabs feature and each AI generation is a billed request;
 the Tone.js synth is the free, always-available fallback and is what powers
@@ -170,7 +168,7 @@ the app when `ELEVENLABS_API_KEY` isn't set.
 
 When the API call fails, the pad is voiced locally by Tone.js. Tone is pointed
 at the app's own AudioContext (`Tone.setContext(ac())`) so its clock is the
-same one the sequencer schedules against — a hit scheduled at AudioContext
+same one the transport schedules against — a hit scheduled at AudioContext
 time `t` lines up whether it's an AI buffer or a Tone voice. Each ink family
 maps to a Tone voice: **orange** (impact) = `MembraneSynth` pitch-drop thump +
 band-passed `NoiseSynth` burst; **blue** (tone) = detuned `fattriangle`
@@ -182,6 +180,7 @@ sounding, since Tone nodes aren't garbage-collected like bare Web Audio nodes.
 
 ## Non-goals (v1)
 
-- Saving kits or sequencer patterns between sessions
+- Saving kits between sessions
 - Multi-touch simultaneous pad playing
-- Patterns longer than one 16-step bar, or per-pad step counts/subdivisions
+- Recording or looping a performance — the transport is a live tempo
+  reference, not a step recorder or per-pad sequencer

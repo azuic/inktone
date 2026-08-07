@@ -381,31 +381,23 @@ body {
 }
 .fader-value { font: 600 9px var(--mono); width: 26px; text-align: right; flex: none; }
 
-/* ---- sequencer ---- */
+/* ---- transport (one-line tempo / step indicator) ---- */
 
-.seq-card {
+.transport {
   flex: none;
-  margin: 12px 14px 14px;
-  border: 1px solid var(--hairline);
-  border-radius: 12px;
-  padding: 10px 12px;
-}
-.seq-head {
   display: flex;
   align-items: center;
   gap: 10px;
-  margin-bottom: 10px;
-}
-.seq-title {
-  font: 700 9px var(--mono);
-  letter-spacing: 2px;
-  color: var(--muted);
+  margin: 12px 14px 14px;
+  padding: 8px 12px;
+  border: 1px solid var(--hairline);
+  border-radius: 12px;
 }
 .bpm-group {
-  margin-left: auto;
   display: flex;
   align-items: center;
   gap: 6px;
+  flex: none;
 }
 .bpm-value {
   display: flex;
@@ -420,37 +412,20 @@ body {
   color: var(--muted);
   letter-spacing: 1px;
 }
-.seq-grid {
-  display: flex;
-  flex-direction: column;
-  gap: 3px;
-}
-.seq-row {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-.seq-row-label {
-  flex: none;
-  width: 22px;
-  font: 600 8px var(--mono);
-  letter-spacing: .5px;
-  color: var(--muted);
-}
-.seq-steps {
+.steps-bar {
   flex: 1;
+  min-width: 0;
   display: grid;
   grid-template-columns: repeat(16, 1fr);
-  gap: 2px;
+  gap: 3px;
+  align-items: center;
 }
-.step {
-  aspect-ratio: 1;
+.step-tick {
+  height: 12px;
   min-width: 0;
   background: var(--paper);
   border: 1px solid var(--hairline);
   border-radius: 2px;
-  cursor: pointer;
 }
-.step.step-alt { background: #e4e6e9; }
-.step.on { background: var(--ink); border-color: var(--ink); }
-.step.current { box-shadow: 0 0 0 1.5px var(--ink) inset; }
+.step-tick.step-beat { background: #e4e6e9; }
+.step-tick.current { background: var(--ink); border-color: var(--ink); }

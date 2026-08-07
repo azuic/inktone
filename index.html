@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>Tink-on — S-4 Sketch Sampler</title>
-<meta name="description" content="Sketch a sound. Ink color, stroke shape and speed become a synthesis prompt played on a four-pad sampler.">
+<meta name="description" content="Sketch a sound. Ink color, stroke shape and speed become a synthesis prompt played on an eight-pad sampler.">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'><rect width='16' height='16' rx='4' fill='%230D0D0D'/></svg>">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -71,17 +71,14 @@
     <section class="pane pane-pads">
       <div class="pad-grid" id="padGrid"></div>
 
-      <div class="seq-card">
-        <div class="seq-head">
-          <div class="seq-title">SEQ</div>
-          <div class="bpm-group">
-            <button class="chip" id="bpmDown">−</button>
-            <div class="bpm-value"><span id="bpmValue">120</span><span class="bpm-unit">BPM</span></div>
-            <button class="chip" id="bpmUp">+</button>
-          </div>
-          <button class="chip chip-toggle" id="playBtn">PLAY</button>
+      <div class="transport">
+        <button class="chip chip-toggle" id="playBtn">PLAY</button>
+        <div class="bpm-group">
+          <button class="chip" id="bpmDown">−</button>
+          <div class="bpm-value"><span id="bpmValue">120</span><span class="bpm-unit">BPM</span></div>
+          <button class="chip" id="bpmUp">+</button>
         </div>
-        <div class="seq-grid" id="seqGrid"></div>
+        <div class="steps-bar" id="stepsBar"></div>
       </div>
     </section>
 

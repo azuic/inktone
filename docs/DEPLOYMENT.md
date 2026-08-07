@@ -62,19 +62,19 @@ CDN, and the function runtime.
   playable pad via the Tone.js fallback synth, and the LCD shows
   `sfx model unavailable — synth`
 - `vendor/tone.js` loads (global `Tone` defined); all four fallback voices
-  are audible; the sequencer schedules them on the shared clock
-- Pads play/pitch/delete correctly
-- SEQ: toggling steps works, PLAY starts a sample-accurate loop with a moving
-  playhead, STOP halts cleanly with no stray playhead highlight left behind
-- Ink swatches, UNDO/CLR/AI, and the prompt row are all visible (regression
+  are audible; the transport schedules its metronome on the shared clock
+- Pads play/pitch/delete correctly (eight pads, keys 1–8)
+- Transport: PLAY sweeps a playhead across the 16-tick bar and ticks a
+  metronome on each quarter beat; STOP halts cleanly with no stray highlight
+- Ink swatches, UNDO/CLR, and the prompt row are all visible (regression
   check — a flexbox shrink bug hid the whole ink row once)
 - Overlapping strokes of two different inks show a visibly different third
   color where they cross (multiply blend), not just one drawn over the other
 - A generated pad shows a square magnetic-board thumbnail: a coarse grid of
-  rounded-square units that pixelate the drawn sketch, faint units for
-  unsketched cells, black/gray shades per ink color (single color = black)
-- Surfaces are cold gray (canvas, step cells, pad tiles) — no cream/yellow
-- Right pane (four square pads in a row + sequencer) fits without scrolling;
+  small rounded-square units that pixelate the drawn sketch, very faint units
+  for unsketched cells, black/gray shades per ink color (single color = black)
+- Surfaces are cold gray (canvas, tick bar, pad tiles) — no cream/yellow
+- Right pane (4×2 square pads + one-line transport) fits without scrolling;
   the pitch/DEL control sits in the left pane under GENERATE
 - Mobile portrait shows the "ROTATE TO LANDSCAPE" hint, not the device;
   mobile landscape and desktop both show the two-pane device directly

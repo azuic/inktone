@@ -17,7 +17,7 @@ const STROKE_WIDTH = 12;
 const STROKE_ALPHA = 0.92;
 
 const PAPER_H = 224;
-const SLOTS = 4;
+const SLOTS = 8;
 
 const $ = (id) => document.getElementById(id);
 const device = $('device');
@@ -217,9 +217,9 @@ function shadeRamp(k) {
 
 function makeThumb(f, strokeList) {
   const size = 200;      // square board, in canvas px
-  const N = 12;          // scatter units per side (kept coarse — a "pixelated" sketch)
+  const N = 13;          // scatter units per side (kept coarse — a "pixelated" sketch)
   const cell = size / N;
-  const inset = cell * 0.15;
+  const inset = cell * 0.26; // larger inset → smaller units with more gap (scatter feel)
   const unit = cell - inset * 2;
   const radius = unit * 0.32;
 
@@ -285,7 +285,7 @@ function makeThumb(f, strokeList) {
       const c = total ? inked / total : 0;
       const ux = i * cell + inset, uy = j * cell + inset;
       if (c < 0.08) {
-        g.fillStyle = 'rgba(28,28,30,0.12)'; // unsketched: faint board unit
+        g.fillStyle = 'rgba(28,28,30,0.055)'; // unsketched: very faint board unit
       } else {
         let dom = null, domN = 0;
         for (const k in tally) if (tally[k] > domN) { domN = tally[k]; dom = k; }
@@ -588,18 +588,18 @@ $('clrBtn').addEventListener('click', () => {
 
 $('genBtn').addEventListener('click', generate);
 
-// keyboard: 1–4 trigger pads
+// keyboard: 1–8 trigger pads
 document.addEventListener('keydown', (e) => {
   const k = parseInt(e.key, 10);
   if (k >= 1 && k <= SLOTS && !e.metaKey && !e.ctrlKey) tapPad(k - 1);
 });
 
-/* ---- sequencer ----
- * A shared clock (not each pad looping on its own timer) is what lets a
- * pad be placed on a specific beat relative to another. STEPS is a single
- * 16-step bar of 16th notes at `bpm`; scheduling uses the standard Web
- * Audio lookahead pattern (poll frequently, schedule audio a bit ahead of
- * now) so timing stays sample-accurate instead of drifting like setInterval.
+/* ---- transport ----
+ * A one-line tempo/step indicator: a shared clock sweeps a playhead across a
+ * 16-step bar and ticks a metronome on each quarter beat, so you can play the
+ * pads live in time. Scheduling uses the Web Audio lookahead pattern (poll
+ * frequently, schedule audio a bit ahead of now) so timing stays sample-
+ * accurate instead of drifting like setInterval.
  */
 
 const SEQ_STEPS = 16;
@@ -609,7 +609,6 @@ const SEQ_SCHEDULE_AHEAD_SEC = 0.1;
 const seq = {
   bpm: 120,
   playing: false,
-  pattern: Array.from({ length: SLOTS }, () => Array(SEQ_STEPS).fill(false)),
   currentStep: 0,
   nextStepTime: 0,
   timer: null,
@@ -620,10 +619,22 @@ function secondsPerStep() {
   return 60 / seq.bpm / 4; // 16th notes
 }
 
+// Short metronome blip on a quarter beat, accented on the downbeat.
+function metroClick(time, accent) {
+  const a = ac();
+  const o = a.createOscillator();
+  o.type = 'square';
+  o.frequency.value = accent ? 2000 : 1350;
+  const g = a.createGain();
+  g.gain.setValueAtTime(accent ? 0.11 : 0.05, time);
+  g.gain.exponentialRampToValueAtTime(0.0001, time + 0.03);
+  o.connect(g).connect(a.destination);
+  o.start(time);
+  o.stop(time + 0.04);
+}
+
 function seqScheduleStep(step, time) {
-  for (let i = 0; i < SLOTS; i++) {
-    if (seq.pattern[i][step]) play(i, time);
-  }
+  if (step % 4 === 0) metroClick(time, step === 0);
   const delayMs = Math.max(0, (time - ac().currentTime) * 1000);
   setTimeout(() => seqHighlightStep(step), delayMs);
 }
@@ -643,17 +654,13 @@ function seqHighlightStep(step) {
   // stopSeq() already cleared the playhead (its 100ms lookahead delay can
   // outlive the click that stopped playback).
   if (!seq.playing) return;
-  if (seqHighlighted >= 0) {
-    for (const row of seqRowEls) row.cells[seqHighlighted].classList.remove('current');
-  }
-  for (const row of seqRowEls) row.cells[step].classList.add('current');
+  if (seqHighlighted >= 0) stepTicks[seqHighlighted].classList.remove('current');
+  stepTicks[step].classList.add('current');
   seqHighlighted = step;
 }
 
 function seqClearHighlight() {
-  if (seqHighlighted >= 0) {
-    for (const row of seqRowEls) row.cells[seqHighlighted].classList.remove('current');
-  }
+  if (seqHighlighted >= 0) stepTicks[seqHighlighted].classList.remove('current');
   seqHighlighted = -1;
 }
 
@@ -729,34 +736,15 @@ function buildInks() {
   }
 }
 
-const seqRowEls = [];
+const stepTicks = [];
 
-function buildSeq() {
-  const grid = $('seqGrid');
-  for (let i = 0; i < SLOTS; i++) {
-    const row = document.createElement('div');
-    row.className = 'seq-row';
-    const label = document.createElement('div');
-    label.className = 'seq-row-label';
-    label.textContent = `P${i + 1}`;
-    row.appendChild(label);
-
-    const steps = document.createElement('div');
-    steps.className = 'seq-steps';
-    const cells = [];
-    for (let s = 0; s < SEQ_STEPS; s++) {
-      const cell = document.createElement('div');
-      cell.className = 'step' + (Math.floor(s / 4) % 2 ? ' step-alt' : '');
-      cell.addEventListener('click', () => {
-        seq.pattern[i][s] = !seq.pattern[i][s];
-        cell.classList.toggle('on', seq.pattern[i][s]);
-      });
-      steps.appendChild(cell);
-      cells.push(cell);
-    }
-    row.appendChild(steps);
-    grid.appendChild(row);
-    seqRowEls.push({ cells });
+function buildTransport() {
+  const bar = $('stepsBar');
+  for (let s = 0; s < SEQ_STEPS; s++) {
+    const tick = document.createElement('div');
+    tick.className = 'step-tick' + (s % 4 === 0 ? ' step-beat' : '');
+    bar.appendChild(tick);
+    stepTicks.push(tick);
   }
 }
 
@@ -797,7 +785,7 @@ function render() {
 
 buildInks();
 buildPads();
-buildSeq();
+buildTransport();
 setLcd('draw, then press GENERATE');
 setBpm(seq.bpm);
 sizeCanvas();
