@@ -16,7 +16,7 @@ const PAPER_GRID_HEX = '#c4c8cf';
 const STROKE_WIDTH = 12;
 const STROKE_ALPHA = 0.92;
 
-const PAPER_H = 224;
+let paperH = 224; // sketch canvas display height (square; measured in sizeCanvas)
 const SLOTS = 8;
 
 const $ = (id) => document.getElementById(id);
@@ -38,9 +38,10 @@ let cur = null;
 
 function sizeCanvas() {
   const dpr = devicePixelRatio || 1;
-  const w = canvas.getBoundingClientRect().width;
-  canvas.width = w * dpr;
-  canvas.height = PAPER_H * dpr;
+  const r = canvas.getBoundingClientRect();
+  paperH = r.height || paperH;
+  canvas.width = r.width * dpr;
+  canvas.height = paperH * dpr;
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   redraw();
 }
@@ -50,10 +51,10 @@ function drawGrid() {
   ctx.globalCompositeOperation = 'source-over';
   ctx.globalAlpha = 1;
   ctx.fillStyle = PAPER_HEX;
-  ctx.fillRect(0, 0, w, PAPER_H);
+  ctx.fillRect(0, 0, w, paperH);
   ctx.fillStyle = PAPER_GRID_HEX;
   for (let x = 14; x < w; x += 18)
-    for (let y = 14; y < PAPER_H; y += 18)
+    for (let y = 14; y < paperH; y += 18)
       ctx.fillRect(x, y, 1.5, 1.5);
 }
 
@@ -150,7 +151,7 @@ function analyze() {
     colorLen[s.color] = (colorLen[s.color] || 0) + sl;
   }
   const dom = Object.keys(colorLen).sort((a, b) => colorLen[b] - colorLen[a])[0];
-  const yNorm = 1 - ySum / Math.max(1, n) / PAPER_H;
+  const yNorm = 1 - ySum / Math.max(1, n) / paperH;
   const speed = speedSum / Math.max(1, n);
   const jagN = Math.min(1, jag / Math.max(1, jn) / 0.9);
   return {
@@ -244,7 +245,7 @@ function makeThumb(f, strokeList) {
   // contain-fit into the square board (letterboxed), each stroke in its ink
   // color, then read it back to sample coverage + dominant color per cell.
   const rect = canvas.getBoundingClientRect();
-  const W = rect.width || 360, H = PAPER_H;
+  const W = rect.width || 360, H = paperH;
   const scale = size / Math.max(W, H);
   const ox = (size - W * scale) / 2, oy = (size - H * scale) / 2;
 

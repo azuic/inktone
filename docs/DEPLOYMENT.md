@@ -74,8 +74,9 @@ CDN, and the function runtime.
   small rounded-square units that pixelate the drawn sketch, very faint units
   for unsketched cells, black/gray shades per ink color (single color = black)
 - Surfaces are cold gray (canvas, tick bar, pad tiles) — no cream/yellow
-- Right pane (4×2 square pads + one-line transport) fits without scrolling;
-  the pitch/DEL control sits in the left pane under GENERATE
+- Left pane is a square sketch canvas + prompt; right pane stacks the 4×2
+  square pads, pitch/DEL control, and one-line transport. Both panes fill the
+  same height and neither scrolls (desktop and landscape phone)
 - Mobile portrait shows the "ROTATE TO LANDSCAPE" hint, not the device;
   mobile landscape and desktop both show the two-pane device directly
 - Each pane (sketch, pads) scrolls independently if its content is taller

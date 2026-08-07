@@ -55,8 +55,8 @@ The same features are serialized into the prompt shown on the LCD:
 
 ## Features
 
-- **Sketch paper** — pointer-drawn canvas on a cold-gray ground with a dot
-  grid, four riso ink swatches, UNDO and CLR. Strokes are wide
+- **Sketch paper** — a square pointer-drawn canvas on a cold-gray ground with
+  a dot grid, four riso ink swatches, UNDO and CLR. Strokes are wide
   (12px, round caps) and composited with a `multiply` blend at less than
   full opacity, the way overlapping riso ink passes actually look: two
   crossing strokes mix into a visibly different third color rather than one
@@ -93,13 +93,14 @@ The same features are serialized into the prompt shown on the LCD:
 ## Layout
 
 Tink-on is a landscape-shaped device: a masthead bar over two side-by-side
-panes. The left pane holds everything tied to a single sound — paper, ink
-row, prompt/GENERATE, and the pad controls (pitch fader, DEL). The right
-pane is a 4×2 grid of eight square pads over the one-line transport, both kept
-at their natural size and vertically centered in the pane, so the right pane
-never has to scroll regardless of device height. (The
-left pane can still scroll on a short screen, since it holds the tall sketch
-canvas.)
+panes. The left pane is the drawing side — a **square** sketch canvas (which
+flexes to fill the column height) with its ink row, over the prompt/GENERATE
+bar. The right pane stacks the 4×2 grid of eight square pads, the pad controls
+(selected-pad name, pitch fader, DEL), and the one-line transport, spread to
+fill the column. Both panes are the same height and fill their space; the pad
+size is capped on a short landscape phone so the right column never scrolls,
+and the left column is narrowed there to keep the square canvas's side mat
+small.
 
 On a phone held upright (portrait), the two-pane layout doesn't have room to
 work, so the device is hidden and a "ROTATE TO LANDSCAPE" hint is shown
@@ -114,9 +115,9 @@ below it.
 Static frontend, one vendored library, zero build step, plus one serverless
 function:
 
-- `index.html` — masthead + two-pane layout (sketch + controls pane, pad
-  grid / transport pane), plus the portrait rotate-hint screen; loads
-  `vendor/tone.js` before `app.js`
+- `index.html` — masthead + two-pane layout (square sketch + prompt pane;
+  pads + pad-controls + transport pane), plus the portrait rotate-hint screen;
+  loads `vendor/tone.js` before `app.js`
 - `styles.css` — design tokens and riso/e-ink styling; the device is
   landscape-shaped at every breakpoint (full-bleed on narrow/short viewports,
   centered card above ~900px wide), and each pane scrolls internally if its

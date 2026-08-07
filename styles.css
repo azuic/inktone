@@ -131,30 +131,49 @@ body {
   overflow-y: auto;
   -webkit-overflow-scrolling: touch;
 }
-.pane-sketch { border-right: 1px solid var(--hairline); }
-/* The pads pane is a flex column: the sequencer keeps its natural height and
-   the pad grid flexes to fill whatever's left, so the pane never has to
-   scroll regardless of device height. */
-.pane-pads {
-  flex: 1.15;
+/* Left pane: a square sketch board that flexes to fill the column height,
+   with the prompt row pinned below it. */
+.pane-sketch {
+  flex: 0.66;
+  border-right: 1px solid var(--hairline);
   display: flex;
   flex-direction: column;
-  justify-content: center;
+}
+/* Right pane: pads, then the pad controls, then the one-line transport,
+   spread to fill the column height. */
+.pane-pads {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
 }
 
 /* ---- paper ---- */
 
 .paper-card {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
   margin: 12px 14px 0;
   border: 1px solid var(--hairline);
   border-radius: 12px;
   overflow: hidden;
 }
-.paper-wrap { position: relative; }
+.paper-wrap {
+  position: relative;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
 #paper {
   display: block;
-  width: 100%;
-  height: 224px;
+  height: 100%;
+  width: auto;
+  aspect-ratio: 1;
+  max-width: 100%;
   background: var(--paper);
   touch-action: none;
   cursor: crosshair;
@@ -279,6 +298,19 @@ body {
   gap: 8px;
   margin: 12px 14px 0;
 }
+/* On a short landscape phone the column is proportionally wider, so narrow the
+   sketch pane (keeps the square's mat small) and cap the pad size so the whole
+   right column (8 pads + pitch + transport) still fits without scrolling. */
+@media (max-height: 440px) {
+  .pane-sketch { flex: 0.4; }
+  .pad-grid { justify-items: center; }
+  .pad { width: min(100%, 84px); }
+  /* the narrowed ink row needs tighter swatches and no hint to fit UNDO/CLR */
+  .ink-row { gap: 6px; padding: 9px 7px; }
+  .ink-swatches { gap: 7px; }
+  .ink-swatch { width: 18px; height: 18px; }
+  .ink-hint { display: none; }
+}
 .pad {
   position: relative;
   display: flex;
@@ -344,7 +376,7 @@ body {
   display: flex;
   align-items: center;
   gap: 12px;
-  margin: 12px 14px 14px;
+  margin: 0 14px;
   padding: 10px 12px;
   border: 1px solid var(--hairline);
   border-radius: 12px;
@@ -388,7 +420,7 @@ body {
   display: flex;
   align-items: center;
   gap: 10px;
-  margin: 12px 14px 14px;
+  margin: 0 14px 12px;
   padding: 8px 12px;
   border: 1px solid var(--hairline);
   border-radius: 12px;
