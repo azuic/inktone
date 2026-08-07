@@ -70,12 +70,12 @@ CDN, and the function runtime.
   check — a flexbox shrink bug hid the whole ink row once)
 - Overlapping strokes of two different inks show a visibly different third
   color where they cross (multiply blend), not just one drawn over the other
-- A generated pad shows a single geometric shape filled with a swirling field
-  of short black strokes, fit and centered on the gray ground (not a blurry
-  photo); the silhouette (triangle / star / square …) is readable
+- A generated pad shows a square magnetic-board thumbnail: a coarse grid of
+  rounded-square units that pixelate the drawn sketch, faint units for
+  unsketched cells, black/gray shades per ink color (single color = black)
 - Surfaces are cold gray (canvas, step cells, pad tiles) — no cream/yellow
-- Right pane (pad grid + sequencer) fits without scrolling; the pitch/DEL
-  control sits in the left pane under GENERATE
+- Right pane (four square pads in a row + sequencer) fits without scrolling;
+  the pitch/DEL control sits in the left pane under GENERATE
 - Mobile portrait shows the "ROTATE TO LANDSCAPE" hint, not the device;
   mobile landscape and desktop both show the two-pane device directly
 - Each pane (sketch, pads) scrolls independently if its content is taller

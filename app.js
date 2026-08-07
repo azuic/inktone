@@ -173,145 +173,130 @@ function promptFor(f) {
 }
 
 /* ---- pad art ----
- * Each generated pad shows a single bold geometric shape (from a small
- * library of solid forms — circle, triangle, polygon, star, trapezoid,
- * squircle, etc.) filled with a black halftone: a grid of dots that are
- * large in the center and shrink toward the edges, clipped to the shape.
- * The shape is fit and centered on a cold-gray ground. Everything is seeded
- * from the sketch's own features, so one sketch always regenerates the same
- * motif and different sketches read as distinct.
+ * Each generated pad shows a square "magnetic drawing board": a coarse grid
+ * of rounded-square scatter units that pixelate the actual sketch. Units
+ * over ink are opaque; unsketched cells are faint, semi-transparent units, so
+ * the whole board reads like a low-res pixel snapshot of the drawing. Ink
+ * colors map to shades of black/gray by how much of each was drawn — a single
+ * color is plain black, multiple colors get distinct grays.
  */
 
-function mulberry32(seed) {
-  return function () {
-    seed |= 0;
-    seed = (seed + 0x6d2b79f5) | 0;
-    let t = Math.imul(seed ^ (seed >>> 15), 1 | seed);
-    t = (t + Math.imul(t ^ (t >>> 7), 61 | t)) ^ t;
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-}
-
-// Each function traces a solid, closed path centered at (cx,cy) within
-// radius r — it only defines the path (no fill), so makeThumb can clip to it
-// and halftone-fill the interior.
-function pathCircle(g, cx, cy, r) {
-  g.beginPath();
-  g.arc(cx, cy, r, 0, Math.PI * 2);
-  g.closePath();
-}
-function pathPolygon(sides, rot0) {
-  return (g, cx, cy, r) => {
-    g.beginPath();
-    for (let i = 0; i < sides; i++) {
-      const a = rot0 + (i / sides) * Math.PI * 2;
-      const x = cx + Math.cos(a) * r, y = cy + Math.sin(a) * r;
-      i ? g.lineTo(x, y) : g.moveTo(x, y);
-    }
-    g.closePath();
-  };
-}
-function pathStar(points, innerRatio, rot0) {
-  return (g, cx, cy, r) => {
-    g.beginPath();
-    for (let i = 0; i < points * 2; i++) {
-      const a = rot0 + (i / (points * 2)) * Math.PI * 2;
-      const rr = i % 2 ? r * innerRatio : r;
-      const x = cx + Math.cos(a) * rr, y = cy + Math.sin(a) * rr;
-      i ? g.lineTo(x, y) : g.moveTo(x, y);
-    }
-    g.closePath();
-  };
-}
-function pathTrapezoid(g, cx, cy, r) {
-  const tw = r * 0.6, bw = r, h = r * 0.78;
-  g.beginPath();
-  g.moveTo(cx - tw, cy - h);
-  g.lineTo(cx + tw, cy - h);
-  g.lineTo(cx + bw, cy + h);
-  g.lineTo(cx - bw, cy + h);
-  g.closePath();
-}
-function pathSemicircle(g, cx, cy, r) {
-  g.beginPath();
-  g.arc(cx, cy + r * 0.4, r, Math.PI, Math.PI * 2);
-  g.closePath();
-}
-function pathSquircle(g, cx, cy, r) {
-  const n = 4, steps = 64;
-  g.beginPath();
-  for (let i = 0; i <= steps; i++) {
-    const a = (i / steps) * Math.PI * 2;
-    const ca = Math.cos(a), sa = Math.sin(a);
-    const x = cx + Math.sign(ca) * Math.pow(Math.abs(ca), 2 / n) * r;
-    const y = cy + Math.sign(sa) * Math.pow(Math.abs(sa), 2 / n) * r;
-    i ? g.lineTo(x, y) : g.moveTo(x, y);
+function nearestInk(r, g, b) {
+  let best = null, bestD = Infinity;
+  for (const ink of INKS) {
+    const n = parseInt(ink.hex.slice(1), 16);
+    const dr = r - ((n >> 16) & 255), dg = g - ((n >> 8) & 255), db = b - (n & 255);
+    const d = dr * dr + dg * dg + db * db;
+    if (d < bestD) { bestD = d; best = ink.key; }
   }
+  return best;
+}
+
+function roundRectPath(g, x, y, w, h, r) {
+  g.beginPath();
+  g.moveTo(x + r, y);
+  g.arcTo(x + w, y, x + w, y + h, r);
+  g.arcTo(x + w, y + h, x, y + h, r);
+  g.arcTo(x, y + h, x, y, r);
+  g.arcTo(x, y, x + w, y, r);
   g.closePath();
 }
 
-const THUMB_SHAPES = [
-  pathCircle,
-  pathPolygon(3, -Math.PI / 2),   // triangle (point up)
-  pathPolygon(4, 0),              // diamond
-  pathPolygon(4, Math.PI / 4),    // square
-  pathPolygon(5, -Math.PI / 2),   // pentagon
-  pathPolygon(6, 0),              // hexagon
-  pathStar(5, 0.46, -Math.PI / 2),
-  pathStar(6, 0.5, 0),
-  pathTrapezoid,
-  pathSemicircle,
-  pathSquircle,
-];
+// k distinct colors → k shades from near-black up through mid-gray. A single
+// color is always plain black.
+function shadeRamp(k) {
+  if (k <= 1) return ['#141414'];
+  const out = [];
+  for (let i = 0; i < k; i++) {
+    const v = Math.round(20 + i * (135 / (k - 1)));
+    const h = v.toString(16).padStart(2, '0');
+    out.push('#' + h + h + h);
+  }
+  return out;
+}
 
-function makeThumb(f) {
-  const size = 240;
+function makeThumb(f, strokeList) {
+  const size = 200;      // square board, in canvas px
+  const N = 12;          // scatter units per side (kept coarse — a "pixelated" sketch)
+  const cell = size / N;
+  const inset = cell * 0.15;
+  const unit = cell - inset * 2;
+  const radius = unit * 0.32;
+
   const t = document.createElement('canvas');
-  t.width = size;
-  t.height = size;
+  t.width = t.height = size;
   const g = t.getContext('2d');
 
-  const seed = Math.floor(f.jag * 9973) ^ Math.floor(f.dur * 7919) ^ Math.floor(f.freq * 31) ^ Math.floor(f.rate * 6151);
-  const rng = mulberry32(seed);
+  // Which inks were used, ordered by how much was drawn → shade per color.
+  const colorLen = {};
+  for (const s of strokeList) {
+    const P = s.pts;
+    let sl = 0;
+    for (let i = 1; i < P.length; i++) sl += Math.hypot(P[i].x - P[i - 1].x, P[i].y - P[i - 1].y);
+    colorLen[s.color] = (colorLen[s.color] || 0) + sl;
+  }
+  const colors = Object.keys(colorLen).sort((a, b) => colorLen[b] - colorLen[a]);
+  const ramp = shadeRamp(colors.length);
+  const shadeMap = {};
+  colors.forEach((c, i) => (shadeMap[c] = ramp[i]));
 
-  // Transparent ground (strokes only) so the pad's own gray shows through, and
-  // the square renders letterboxed via object-fit:contain without cropping.
-  const cx = size / 2, cy = size / 2, R = size * 0.46;
-  const shape = THUMB_SHAPES[Math.floor(rng() * THUMB_SHAPES.length)];
+  // Render the strokes into an offscreen buffer, the whole sketch canvas
+  // contain-fit into the square board (letterboxed), each stroke in its ink
+  // color, then read it back to sample coverage + dominant color per cell.
+  const rect = canvas.getBoundingClientRect();
+  const W = rect.width || 360, H = PAPER_H;
+  const scale = size / Math.max(W, H);
+  const ox = (size - W * scale) / 2, oy = (size - H * scale) / 2;
 
-  // Rotate the shape and its stroke field together by a small angle so tiles
-  // look hand-placed rather than mechanically axis-aligned.
-  g.save();
-  g.translate(cx, cy);
-  g.rotate((rng() - 0.5) * 0.6);
-  g.translate(-cx, -cy);
-  shape(g, cx, cy, R);
-  g.clip();
+  const src = document.createElement('canvas');
+  src.width = src.height = size;
+  const sg = src.getContext('2d');
+  sg.lineCap = 'round';
+  sg.lineJoin = 'round';
+  sg.lineWidth = STROKE_WIDTH * scale;
+  for (const s of strokeList) {
+    sg.strokeStyle = INKS.find((i) => i.key === s.color).hex;
+    sg.beginPath();
+    s.pts.forEach((p, i) => {
+      const x = ox + p.x * scale, y = oy + p.y * scale;
+      i ? sg.lineTo(x, y) : sg.moveTo(x, y);
+    });
+    sg.stroke();
+  }
+  const data = sg.getImageData(0, 0, size, size).data;
 
-  // Field of short, discrete black strokes clipped to the shape. Each mark
-  // orients tangent to the circle around the shape's center (a swirling
-  // "gravity field"), like iron filings, so they snap into flowing lines that
-  // fill the silhouette. Strokes stay short (gaps between them) so they read
-  // as individual dashes rather than solid contour rings, with a little angle
-  // jitter so the field looks hand-placed.
-  g.strokeStyle = '#111';
-  g.lineWidth = 1.8;
-  g.lineCap = 'round';
-  const cell = size / 16;
-  for (let y = -size * 0.4; y < size * 1.4; y += cell) {
-    for (let x = -size * 0.4; x < size * 1.4; x += cell) {
-      const dx = x - cx, dy = y - cy;
-      const tt = Math.min(1, Math.hypot(dx, dy) / R);
-      const ang = Math.atan2(dy, dx) + Math.PI / 2 + (rng() - 0.5) * 0.3; // tangent + jitter
-      const len = cell * (0.3 + 0.12 * (1 - tt)); // half-length; < cell so marks stay separate
-      const ex = Math.cos(ang) * len, ey = Math.sin(ang) * len;
-      g.beginPath();
-      g.moveTo(x - ex, y - ey);
-      g.lineTo(x + ex, y + ey);
-      g.stroke();
+  for (let j = 0; j < N; j++) {
+    for (let i = 0; i < N; i++) {
+      const x0 = Math.floor(i * cell), y0 = Math.floor(j * cell);
+      const x1 = Math.floor((i + 1) * cell), y1 = Math.floor((j + 1) * cell);
+      let inked = 0, total = 0;
+      const tally = {};
+      for (let y = y0; y < y1; y += 2) {
+        for (let x = x0; x < x1; x += 2) {
+          total++;
+          const idx = (y * size + x) * 4;
+          if (data[idx + 3] > 60) {
+            inked++;
+            const key = nearestInk(data[idx], data[idx + 1], data[idx + 2]);
+            tally[key] = (tally[key] || 0) + 1;
+          }
+        }
+      }
+      const c = total ? inked / total : 0;
+      const ux = i * cell + inset, uy = j * cell + inset;
+      if (c < 0.08) {
+        g.fillStyle = 'rgba(28,28,30,0.12)'; // unsketched: faint board unit
+      } else {
+        let dom = null, domN = 0;
+        for (const k in tally) if (tally[k] > domN) { domN = tally[k]; dom = k; }
+        g.globalAlpha = 0.6 + 0.4 * Math.min(1, c * 1.6);
+        g.fillStyle = shadeMap[dom] || '#141414';
+      }
+      roundRectPath(g, ux, uy, unit, unit, radius);
+      g.fill();
+      g.globalAlpha = 1;
     }
   }
-  g.restore();
 
   return t.toDataURL('image/png');
 }
@@ -506,7 +491,7 @@ async function generate() {
   ac(); // resume audio inside the user gesture
   const f = analyze();
   const prompt = promptFor(f);
-  const th = makeThumb(f);
+  const th = makeThumb(f, strokes);
   state.generating = true;
   $('genBtn').classList.add('waiting');
   $('genBtn').textContent = 'WAIT';
@@ -709,8 +694,10 @@ function buildPads() {
     const root = document.createElement('div');
     root.className = 'pad';
     root.innerHTML =
+      '<div class="pad-board">' +
       '<img class="pad-thumb" alt="" draggable="false">' +
       '<div class="pad-blank">EMPTY</div>' +
+      '</div>' +
       '<div class="pad-strip">' +
       '<div class="pad-led"></div>' +
       `<div class="pad-label">P${i + 1}</div>` +

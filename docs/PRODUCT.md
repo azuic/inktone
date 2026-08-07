@@ -68,24 +68,19 @@ The same features are serialized into the prompt shown on the LCD:
   (`reading sketch` → `sending prompt to sfx model` → `rendering audio`), fills the
   next empty pad with the sound, a generated thumbnail, and its prompt, then
   plays it with an e-ink refresh flash.
-- **Four pads (P1–P4)** — tap to play; each shows a generative stroke-field
-  thumbnail, an ink LED, and a family tag (SUB / IMPACT / TONE / TEXTR) plus
-  pitch offset. The thumbnail is a single shape drawn from a library of ~11
-  forms (circle, triangle, diamond, square, pentagon, hexagon, 5- and 6-point
-  stars, trapezoid, semicircle, squircle), filled with a field of **short
-  black strokes** clipped to the shape: each mark orients tangent to the
-  circle around the shape's center (a swirling "gravity field", like iron
-  filings), with a little angle jitter so it looks hand-placed. The strokes
-  stay short — gaps between them — so they read as individual dashes rather
-  than solid contour rings, and stay visible right to the clip edge so the
-  silhouette (star points, corners) still reads. The shape and its stroke
-  field rotate together by a small random angle, and it's rendered transparent
-  (strokes only) and centered so `object-fit: contain` shows the whole shape
-  on the pad's own gray ground — no cropping. Everything is seeded from the
-  sketch's own features (jaggedness, duration, pitch, flutter rate), so one
-  sketch always regenerates the same motif and different sketches read as
-  distinct. This replaced an earlier canvas snapshot of the sketch, which
-  looked blurry at pad size.
+- **Four pads (P1–P4)** — laid out as a row of four square displays; tap to
+  play. Each square is a **magnetic drawing board**: a coarse 12×12 grid of
+  rounded-square scatter units that pixelate the actual sketch. The sketch
+  canvas is contain-fit into the square, then sampled per cell — cells with
+  ink get an opaque unit, unsketched cells get a faint, semi-transparent one,
+  so the board reads as a low-res pixel snapshot of the drawing rather than an
+  abstract motif. Ink colors map to shades of black/gray by how much of each
+  was drawn: a single-color sketch is plain black, and a mix gets distinct
+  grays (most-drawn darkest). Below the board, an ink LED and a family tag
+  (SUB / IMPACT / TONE / TEXTR) plus pitch offset. This board replaced a run
+  of earlier thumbnail approaches — a blurry downscaled snapshot, then an
+  abstract generated shape — because a literal pixelation of what you drew
+  ties each pad directly to its sketch.
 - **Pad controls** — pitch fader (±12 semitones), DEL to clear a slot.
 - **Step sequencer (SEQ)** — a shared master clock (40–240 BPM) and a 16-step
   grid (one row per pad) let you place pads on exact beats relative to each
@@ -101,9 +96,9 @@ The same features are serialized into the prompt shown on the LCD:
 Tink-on is a landscape-shaped device: a masthead bar over two side-by-side
 panes. The left pane holds everything tied to a single sound — paper, ink
 row, prompt/GENERATE, and the pad controls (pitch fader, DEL). The right
-pane is the pad grid over the step sequencer, and is a flex column: the
-sequencer keeps its natural height and the pad grid flexes to fill the rest,
-so the right pane never has to scroll regardless of device height. (The
+pane is a row of four square pads over the step sequencer, both kept at their
+natural size and vertically centered in the pane, so the right pane never has
+to scroll regardless of device height. (The
 left pane can still scroll on a short screen, since it holds the tall sketch
 canvas.)
 
@@ -128,7 +123,7 @@ function:
   centered card above ~900px wide), and each pane scrolls internally if its
   content exceeds the device's height
 - `app.js` — stroke capture (wide multiply-blended riso strokes), feature
-  analysis, prompt compiler, generative stroke-field shape thumbnails, AI-fetch +
+  analysis, prompt compiler, magnetic-board pixel thumbnails, AI-fetch +
   trim, Tone.js fallback synth, pad/pitch state, step-sequencer clock and
   scheduling
 - `vendor/tone.js` — the [Tone.js](https://tonejs.github.io) UMD build,
