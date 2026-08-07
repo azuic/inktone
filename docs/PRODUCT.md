@@ -82,12 +82,15 @@ The same features are serialized into the prompt shown on the LCD:
   This board replaced a run of earlier thumbnail approaches — a blurry
   downscaled snapshot, then an abstract generated shape — because a literal
   pixelation of what you drew ties each pad directly to its sketch.
-- **Pad controls** — pitch fader (±12 semitones), DEL to clear a slot.
-- **Transport** — a one-line tempo/step indicator (40–240 BPM). PLAY/STOP runs
-  a shared clock that sweeps a playhead across a 16-step bar and ticks a
-  metronome on each quarter beat, so you can play the pads live in time. It is
-  a timing reference, not a step grid — there is no per-pad step programming;
-  the pads are performed, not sequenced.
+- **Pad controls** — pitch fader (±12 semitones), DEL to clear a slot (and its
+  recorded hits).
+- **Transport** — a one-line drum-machine loop (40–240 BPM). PLAY/STOP runs a
+  shared clock that sweeps a playhead across a 16-step bar and ticks a
+  metronome on each quarter beat. While it's running, tapping a pad records
+  that hit into the loop, quantized to the nearest step, so the beat you tap
+  plays back every bar (a live overdub). Recorded steps show as filled ticks
+  on the bar; clicking a tick erases every pad's hit on that step, and tapping
+  a pad while stopped is a one-shot preview that records nothing.
 - **Aesthetic** — e-ink instrument panel: IBM Plex Mono, `#eceef0` chassis,
   hairline `rgba(28,29,32,.22)` borders, invert-flash animations, blinking LCD cursor.
 
@@ -182,7 +185,7 @@ sounding, since Tone nodes aren't garbage-collected like bare Web Audio nodes.
 
 ## Non-goals (v1)
 
-- Saving kits between sessions
+- Saving kits or recorded loops between sessions
 - Multi-touch simultaneous pad playing
-- Recording or looping a performance — the transport is a live tempo
-  reference, not a step recorder or per-pad sequencer
+- Multiple bars, tempo-synced pad durations, or step subdivisions finer than
+  16ths — the loop is a single quantized 16-step bar

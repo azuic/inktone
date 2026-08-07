@@ -49,9 +49,10 @@ vercel dev
 
 Keys `1`–`8` trigger pads. GENERATE always calls the ElevenLabs Sound Effects
 API and falls back to the Tone.js synth on any failure. The **transport** is a
-one-line tempo/step indicator (40–240 BPM): PLAY sweeps a playhead across a
-16-step bar and ticks a metronome on each quarter beat, so you can play the
-eight pads live in time.
+one-line drum-machine loop (40–240 BPM): PLAY sweeps a playhead across a
+16-step bar with a metronome, and tapping a pad while it runs records that hit
+into the loop (quantized), so the beat you tap plays back every bar. Filled
+ticks show recorded steps; click a tick to erase it.
 
 ## Docs
 

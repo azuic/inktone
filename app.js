@@ -537,7 +537,14 @@ function tapPad(i) {
   const pad = state.pads[i];
   state.sel = i;
   render();
-  if (pad) play(i);
+  if (!pad) return;
+  play(i); // immediate feedback
+  // While the loop runs, a tap records the hit at the nearest step so it
+  // plays back every bar — like a drum machine's live overdub.
+  if (seq.playing) {
+    seq.pattern[i][quantizedStep()] = true;
+    renderTicks();
+  }
 }
 
 /* ---- controls ---- */
@@ -571,6 +578,8 @@ $('delBtn').addEventListener('click', () => {
   const i = state.sel;
   if (i < 0 || !state.pads[i]) return;
   state.pads[i] = null;
+  seq.pattern[i].fill(false); // drop this slot's recorded hits too
+  renderTicks();
   setLcd('slot cleared');
   render();
 });
@@ -596,11 +605,12 @@ document.addEventListener('keydown', (e) => {
 });
 
 /* ---- transport ----
- * A one-line tempo/step indicator: a shared clock sweeps a playhead across a
- * 16-step bar and ticks a metronome on each quarter beat, so you can play the
- * pads live in time. Scheduling uses the Web Audio lookahead pattern (poll
- * frequently, schedule audio a bit ahead of now) so timing stays sample-
- * accurate instead of drifting like setInterval.
+ * A drum-machine loop. A shared clock sweeps a playhead across a 16-step bar,
+ * ticks a metronome on each quarter beat, and plays any recorded pad hits.
+ * While it's running, tapping a pad records that hit into the loop, quantized
+ * to the nearest step, so the beat you tap plays back every bar. Scheduling
+ * uses the Web Audio lookahead pattern (poll frequently, schedule audio a bit
+ * ahead of now) so timing stays sample-accurate instead of drifting.
  */
 
 const SEQ_STEPS = 16;
@@ -613,6 +623,9 @@ const seq = {
   currentStep: 0,
   nextStepTime: 0,
   timer: null,
+  pattern: Array.from({ length: SLOTS }, () => Array(SEQ_STEPS).fill(false)),
+  lastStep: 0,     // index of the step currently sounding
+  lastStepTime: 0, // AudioContext time that step fired (for tap quantization)
 };
 let seqHighlighted = -1;
 
@@ -636,8 +649,9 @@ function metroClick(time, accent) {
 
 function seqScheduleStep(step, time) {
   if (step % 4 === 0) metroClick(time, step === 0);
+  for (let i = 0; i < SLOTS; i++) if (seq.pattern[i][step]) play(i, time);
   const delayMs = Math.max(0, (time - ac().currentTime) * 1000);
-  setTimeout(() => seqHighlightStep(step), delayMs);
+  setTimeout(() => seqStepFired(step, time), delayMs);
 }
 
 function seqTick() {
@@ -650,14 +664,33 @@ function seqTick() {
   seq.timer = setTimeout(seqTick, SEQ_LOOKAHEAD_MS);
 }
 
-function seqHighlightStep(step) {
-  // Guards against a highlight scheduled just before STOP firing after
-  // stopSeq() already cleared the playhead (its 100ms lookahead delay can
-  // outlive the click that stopped playback).
+function seqStepFired(step, time) {
+  // Guards against a step scheduled just before STOP firing after stopSeq()
+  // already cleared the playhead (its 100ms lookahead delay can outlive the
+  // click that stopped playback).
   if (!seq.playing) return;
+  seq.lastStep = step;
+  seq.lastStepTime = time;
   if (seqHighlighted >= 0) stepTicks[seqHighlighted].classList.remove('current');
   stepTicks[step].classList.add('current');
   seqHighlighted = step;
+}
+
+// Which step a tap "now" should snap to — the nearest step boundary to the
+// step currently sounding.
+function quantizedStep() {
+  const dt = ac().currentTime - seq.lastStepTime;
+  const advance = dt > secondsPerStep() / 2 ? 1 : 0;
+  return (seq.lastStep + advance + SEQ_STEPS) % SEQ_STEPS;
+}
+
+// Mark the tick bar with the steps that have any recorded hit.
+function renderTicks() {
+  for (let s = 0; s < SEQ_STEPS; s++) {
+    let hit = false;
+    for (let i = 0; i < SLOTS; i++) if (seq.pattern[i][s]) { hit = true; break; }
+    stepTicks[s].classList.toggle('hit', hit);
+  }
 }
 
 function seqClearHighlight() {
@@ -671,6 +704,8 @@ function startSeq() {
   seq.playing = true;
   seq.currentStep = 0;
   seq.nextStepTime = ac().currentTime + 0.05;
+  seq.lastStep = 0;
+  seq.lastStepTime = seq.nextStepTime;
   seqTick();
   render();
 }
@@ -744,6 +779,11 @@ function buildTransport() {
   for (let s = 0; s < SEQ_STEPS; s++) {
     const tick = document.createElement('div');
     tick.className = 'step-tick' + (s % 4 === 0 ? ' step-beat' : '');
+    // Click a tick to erase every pad's hit on that step.
+    tick.addEventListener('click', () => {
+      for (let i = 0; i < SLOTS; i++) seq.pattern[i][s] = false;
+      renderTicks();
+    });
     bar.appendChild(tick);
     stepTicks.push(tick);
   }

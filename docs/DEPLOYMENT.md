@@ -64,8 +64,10 @@ CDN, and the function runtime.
 - `vendor/tone.js` loads (global `Tone` defined); all four fallback voices
   are audible; the transport schedules its metronome on the shared clock
 - Pads play/pitch/delete correctly (eight pads, keys 1–8)
-- Transport: PLAY sweeps a playhead across the 16-tick bar and ticks a
-  metronome on each quarter beat; STOP halts cleanly with no stray highlight
+- Transport: PLAY sweeps a playhead across the 16-tick bar with a metronome;
+  tapping a pad while it runs records a quantized hit that loops (filled tick);
+  clicking a tick erases it; tapping while stopped is preview-only; STOP halts
+  cleanly with no stray highlight
 - Ink swatches, UNDO/CLR, and the prompt row are all visible (regression
   check — a flexbox shrink bug hid the whole ink row once)
 - Overlapping strokes of two different inks show a visibly different third

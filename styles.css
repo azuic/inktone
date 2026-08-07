@@ -453,6 +453,8 @@ body {
   background: var(--paper);
   border: 1px solid var(--hairline);
   border-radius: 2px;
+  cursor: pointer;
 }
 .step-tick.step-beat { background: #e4e6e9; }
+.step-tick.hit { background: #b3b8bf; border-color: #9aa0a8; }
 .step-tick.current { background: var(--ink); border-color: var(--ink); }
