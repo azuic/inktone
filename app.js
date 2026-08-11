@@ -598,6 +598,38 @@ $('clrBtn').addEventListener('click', () => {
 
 $('genBtn').addEventListener('click', generate);
 
+/* ---- one flick up = full screen ----
+ * On a phone the sticky/spacer rules in styles.css let the browser collapse
+ * its own chrome from the scroll. Tablets keep their toolbar no matter how
+ * far you scroll, so the same upward flick asks for real fullscreen instead.
+ * Flicks that start on the paper or the fader are drawing/dragging, not
+ * scrolling, so they are left alone.
+ */
+function initFullscreenFlick() {
+  const el = document.documentElement;
+  const req = el.requestFullscreen || el.webkitRequestFullscreen;
+  if (!req) return;
+  let from = null;
+
+  addEventListener('touchstart', (e) => {
+    const t = e.touches.length === 1 ? e.touches[0] : null;
+    from = t && !t.target.closest('#paper, #fader') ? t.clientY : null;
+  }, { passive: true });
+
+  addEventListener('touchend', (e) => {
+    const y = from;
+    from = null;
+    const t = e.changedTouches[0];
+    if (y === null || !t || y - t.clientY < 60) return;
+    if (document.fullscreenElement || document.webkitFullscreenElement) return;
+    if (innerHeight > 560 || innerHeight > innerWidth) return; // short landscape only
+    try {
+      const p = req.call(el);
+      if (p && p.catch) p.catch(() => {});
+    } catch (_) {}
+  }, { passive: true });
+}
+
 // keyboard: 1–8 trigger pads
 document.addEventListener('keydown', (e) => {
   const k = parseInt(e.key, 10);
@@ -831,4 +863,5 @@ setLcd('draw, then press GENERATE');
 setBpm(seq.bpm);
 sizeCanvas();
 render();
+initFullscreenFlick();
 addEventListener('resize', sizeCanvas);

@@ -458,3 +458,207 @@ body {
 .step-tick.step-beat { background: #e4e6e9; }
 .step-tick.hit { background: #b3b8bf; border-color: #9aa0a8; }
 .step-tick.current { background: var(--ink); border-color: var(--ink); }
+
+/* ---- phone landscape: three columns, nothing overflows ----
+
+   The panes become `display: contents` so their children drop straight into
+   one grid: sketch | prompt+controls | pads. The DOM (and the desktop
+   layout above) is untouched.
+
+   The device is sized in dvh and pinned sticky under a chrome-height spacer,
+   so one upward flick collapses the browser bars and the app snaps to fill
+   the screen. */
+
+@media (orientation: landscape) and (max-height: 560px) {
+
+  html {
+    height: auto;
+    overscroll-behavior-y: none;
+  }
+  body {
+    display: block;
+    height: auto;
+    min-height: 100svh;
+  }
+  /* Real scroll room below the app: Safari only collapses its chrome once
+     there is a decent amount to scroll, and it stays collapsed only if the
+     page doesn't spring back. So: a generous spacer, no scroll-snap (snapping
+     pulled the page straight back to the top and the bars returned), and a
+     sticky device that stays pinned full-screen the whole way down. */
+  body::after {
+    content: '';
+    display: block;
+    height: 60vh;
+  }
+  /* Keep the chassis clear of the rounded display corners and the home
+     indicator — edge-to-edge content gets clipped at the corners otherwise.
+     env() covers notched devices; the floor covers the rest. */
+  .device {
+    position: sticky;
+    top: 0;
+    height: 100dvh;
+    max-width: none;
+    max-height: none;
+    padding-left: max(7px, env(safe-area-inset-left));
+    padding-right: max(7px, env(safe-area-inset-right));
+    padding-bottom: max(5px, env(safe-area-inset-bottom));
+  }
+
+  .masthead { padding: 6px 6px; gap: 6px; }
+  .masthead-sub { display: none; }
+
+  .layout {
+    display: grid;
+    grid-template-columns: auto minmax(180px, 1fr) auto;
+    /* the prompt card takes the slack; transport and pitch are content-sized
+       so they can never outgrow their boxes on a short viewport */
+    grid-template-rows: minmax(0, 1fr) auto auto;
+    gap: 8px;
+    padding: 8px 0 0;
+    /* the sketch and pad columns measure themselves against this box */
+    container-type: size;
+  }
+  .pane { display: contents; }
+
+  /* column 1 — a true square sketch board, ink controls in a rail beside it.
+     The board is sized off the column height, so the column shrink-wraps to
+     square + rail and stands exactly as tall as the other two. */
+  .paper-card {
+    grid-column: 1;
+    grid-row: 1 / -1;
+    margin: 0;
+    flex-direction: row;
+  }
+  /* The board's side is an explicit width, never one inferred from the height
+     via aspect-ratio: a grid track can't hand an intrinsic width back to the
+     item that's supposed to define it, and engines disagree about what to do
+     with that. The vw cap guarantees the three columns always fit. */
+  .paper-wrap { flex: none; height: 100%; width: 38vw; aspect-ratio: auto; }
+  @supports (height: 1cqh) {
+    .paper-wrap { width: min(calc(100cqh - 2px), 42vw); }
+  }
+  /* fixed rail — wide enough for UNDO/CLR in any fallback font, no wider */
+  .ink-row {
+    flex: none;
+    width: 44px;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 9px;
+    padding: 8px 5px;
+    border-top: none;
+    border-left: 1px solid var(--hairline);
+  }
+  .ink-swatches { flex-direction: column; gap: 9px; align-items: center; }
+  .ink-swatch { width: 20px; height: 20px; }
+  .ink-hint { display: none; }
+  /* inks at the top of the rail, UNDO/CLR anchored to the bottom */
+  .ink-row .chip { padding: 5px 2px; font-size: 8px; letter-spacing: .5px; text-align: center; }
+  #undoBtn { margin-top: auto; }
+
+  /* column 2 — prompt with GENERATE beneath it, transport on the bottom row */
+  .prompt-row {
+    grid-column: 2;
+    grid-row: 1;
+    margin: 0;
+    flex-direction: column;
+    min-height: 0;
+  }
+  /* the readout takes whatever height the column has spare; GENERATE keeps
+     its own size at the bottom of the card */
+  .prompt-lcd { flex: 1; min-height: 36px; overflow-y: auto; }
+  .gen-btn {
+    flex: none;
+    width: 100%;
+    padding: 13px 0;
+    border-left: none;
+    border-top: 1px solid var(--hairline);
+  }
+  /* Transport as an explicit two-row grid rather than a wrapping flex row:
+     PLAY and the tempo group share the top row and stretch across it, the
+     sixteen steps sit on the row below. Wrapping was reflowing PLAY onto its
+     own line on narrow columns and spilling the steps out of the box. */
+  .transport {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1.5fr);
+    align-items: center;
+    grid-column: 2;
+    grid-row: 2;
+    margin: 0;
+    gap: 8px;
+    padding: 9px 10px;
+  }
+  .transport > .chip { grid-column: 1; padding: 9px 4px; text-align: center; }
+  .bpm-group { grid-column: 2; justify-content: space-between; gap: 4px; }
+  .bpm-group .chip { flex: none; padding: 9px 8px; }
+  .bpm-value { flex: 1; min-width: 38px; }
+  /* small squares — the column width sets the size, the ratio keeps them square */
+  .steps-bar { grid-column: 1 / -1; gap: 2px; }
+  .step-tick { height: auto; aspect-ratio: 1; border-radius: 2px; }
+
+  /* column 3 — the eight pads, full height.
+
+     The column is as wide as the height allows rather than a share of the
+     width: the vertical room the four pad rows get decides the board size,
+     and the column is two of those across. That keeps every board exactly
+     square, so pad art fills it instead of being letterboxed. */
+  .pad-grid {
+    --pad-gap: 6px;
+    /* row area = 100cqh − pad gaps − pad borders */
+    --pad-w: calc((100cqh - 18px - 8px) / 4);
+    grid-column: 3;
+    grid-row: 1 / -1;
+    margin: 0;
+    min-height: 0;
+    width: 20vw;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-rows: repeat(4, auto);
+    gap: var(--pad-gap);
+    align-content: center;
+    justify-items: stretch;
+  }
+  @supports (height: 1cqh) {
+    .pad-grid { width: min(calc(2 * var(--pad-w) + var(--pad-gap)), 24vw); }
+  }
+  .pad { width: auto; min-height: 0; border-radius: 8px; }
+  .pad-board { aspect-ratio: 1; flex: none; }
+  /* the label rides on the board instead of sitting under it — a strip of its
+     own would cost a sixth of every board's height, and the boards only have
+     a quarter of the column to share */
+  .pad-strip {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    gap: 3px;
+    height: 13px;
+    padding: 0 4px;
+    background: rgba(236, 238, 240, .88);
+  }
+  .pad-led { width: 5px; height: 5px; }
+  .pad-label { font-size: 7.5px; letter-spacing: .5px; }
+  .pad-tag { font-size: 7px; }
+  /* selection as an inset ring, so a selected pad doesn't grow 2px and shove
+     the column out of its exact fit */
+  .pad.selected { border-width: 1px; box-shadow: inset 0 0 0 2px var(--ink); }
+  .pad.selected .pad-strip { border-top-width: 1px; }
+
+  /* pitch strip, on the bottom row under the transport */
+  .control-strip {
+    grid-column: 2;
+    grid-row: 3;
+    margin: 0;
+    gap: 8px;
+    padding: 5px 10px;
+  }
+  .sel-name {
+    min-width: 0;
+    font-size: 8px;
+    overflow: hidden;
+    white-space: nowrap;
+    text-overflow: ellipsis;
+  }
+  .control-strip .chip { padding: 5px 8px; font-size: 8px; }
+  .fader-label { display: none; }
+  .fader { height: 22px; }
+  .fader-value { width: 20px; font-size: 8px; }
+}
