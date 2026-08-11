@@ -448,6 +448,26 @@ function wait(ms) {
 // /api/generate-sound proxy, which holds the key server-side), targeting the
 // sketch's exact duration — the API accepts 0.5-30s, so only sketches under
 // 0.5s need the returned audio trimmed down afterward.
+/* Why the sound model didn't answer, in the few words the LCD has room for.
+ * The serverless function passes ElevenLabs' own error detail through, so the
+ * failure that reads as a dead key from the outside — an exhausted monthly
+ * quota — can be named as itself. Detail is checked before status, since a
+ * quota rejection comes back as a 401. */
+async function aiFailureReason(resp) {
+  let detail = '';
+  try {
+    detail = JSON.stringify(await resp.json());
+  } catch {
+    /* non-JSON body — fall through to the status codes */
+  }
+  if (/quota_exceeded|exceeds your quota/i.test(detail)) return 'sfx quota exhausted';
+  if (/not configured/i.test(detail)) return 'sfx key not configured';
+  if (resp.status === 429) return 'sfx rate limited';
+  if (resp.status === 401 || resp.status === 403) return 'sfx key rejected';
+  if (resp.status === 404) return 'sfx endpoint offline';
+  return `sfx model unavailable (${resp.status})`;
+}
+
 async function fetchAiBuffer(prompt, targetDurSec) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), 45000);
@@ -458,7 +478,11 @@ async function fetchAiBuffer(prompt, targetDurSec) {
       body: JSON.stringify({ prompt, durationSec: targetDurSec }),
       signal: controller.signal,
     });
-    if (!resp.ok) throw new Error(`generation failed: ${resp.status}`);
+    if (!resp.ok) {
+      const err = new Error(`generation failed: ${resp.status}`);
+      err.lcd = await aiFailureReason(resp);
+      throw err;
+    }
     const arrBuf = await resp.arrayBuffer();
     const decoded = await ac().decodeAudioData(arrBuf);
     return targetDurSec < decoded.duration ? trimBuffer(decoded, targetDurSec) : decoded;
@@ -509,7 +533,8 @@ async function generate() {
     await wait(150);
   } catch (err) {
     console.warn('AI generation failed, falling back to Tone.js synth:', err);
-    setLcd('sfx model unavailable — synth');
+    const why = err.lcd || (err.name === 'AbortError' ? 'sfx timed out' : 'sfx offline');
+    setLcd(`${why} — synth`);
     await wait(500);
   }
 
