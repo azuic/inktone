@@ -662,3 +662,16 @@ body {
   .fader { height: 22px; }
   .fader-value { width: 20px; font-size: 8px; }
 }
+
+/* Awwwards honoree ribbon — pinned to the right edge, vertically centred.
+   Sized in the SVG's width/height attributes (43×139, about 80% of the
+   official 53×171 art); the viewBox keeps the artwork proportional. */
+.awwwards {
+  position: fixed;
+  top: 50%;
+  right: 0;
+  transform: translateY(-50%);
+  z-index: 999;
+  line-height: 0;
+}
+.awwwards svg { display: block; }
