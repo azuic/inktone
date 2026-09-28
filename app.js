@@ -36,11 +36,26 @@ let cur = null;
 
 /* ---- paper ---- */
 
+/* On an upright phone the device is turned a quarter turn in CSS. The
+   browser still reports boxes and pointer positions in screen terms, so
+   where those are read, a turned box has its sides swapped and a pointer's
+   screen position is mapped back onto the device's own axes: down the
+   screen is rightwards on the device, leftwards on the screen is downwards. */
+const TURNED = matchMedia('(orientation: portrait) and (max-width: 899px)');
+const turned = () => TURNED.matches;
+function localPoint(e, r) {
+  return turned()
+    ? { x: e.clientY - r.top, y: r.right - e.clientX }
+    : { x: e.clientX - r.left, y: e.clientY - r.top };
+}
+function boxWidth(r) { return turned() ? r.height : r.width; }
+function boxHeight(r) { return turned() ? r.width : r.height; }
+
 function sizeCanvas() {
   const dpr = devicePixelRatio || 1;
   const r = canvas.getBoundingClientRect();
-  paperH = r.height || paperH;
-  canvas.width = r.width * dpr;
+  paperH = boxHeight(r) || paperH;
+  canvas.width = boxWidth(r) * dpr;
   canvas.height = paperH * dpr;
   ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
   redraw();
@@ -80,8 +95,8 @@ function redraw() {
 }
 
 function pos(e) {
-  const r = canvas.getBoundingClientRect();
-  return { x: e.clientX - r.left, y: e.clientY - r.top, t: performance.now() };
+  const p = localPoint(e, canvas.getBoundingClientRect());
+  return { x: p.x, y: p.y, t: performance.now() };
 }
 
 canvas.addEventListener('pointerdown', (e) => {
@@ -245,7 +260,7 @@ function makeThumb(f, strokeList) {
   // contain-fit into the square board (letterboxed), each stroke in its ink
   // color, then read it back to sample coverage + dominant color per cell.
   const rect = canvas.getBoundingClientRect();
-  const W = rect.width || 360, H = paperH;
+  const W = boxWidth(rect) || 360, H = paperH;
   const scale = size / Math.max(W, H);
   const ox = (size - W * scale) / 2, oy = (size - H * scale) / 2;
 
@@ -586,7 +601,7 @@ let faderDown = false;
 
 function faderVal(e) {
   const r = fader.getBoundingClientRect();
-  return ((e.clientX - r.left) / r.width) * 24 - 12;
+  return (localPoint(e, r).x / boxWidth(r)) * 24 - 12;
 }
 fader.addEventListener('pointerdown', (e) => {
   fader.setPointerCapture(e.pointerId);

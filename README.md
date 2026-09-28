@@ -5,9 +5,10 @@ translates the sketch — its color, position, length, speed, and jaggedness —
 into a synthesized sound on an eight-pad sampler. Pitch it, then play the pads
 live against a tempo transport to build a beat.
 
-Tink-on is a landscape-shaped instrument, played sideways: on a phone, rotate
-to landscape to use it — a large near-square sketch pane sits beside the pads,
-pitch control, and transport.
+Tink-on is a landscape-shaped instrument, played sideways: a large near-square
+sketch pane sits beside the pads, pitch control, and transport. On a phone held
+upright the whole device is drawn turned a quarter turn, so it plays sideways
+whatever the rotation lock says; held sideways, it fills the screen as it is.
 
 **The drawing is the prompt**: every sketch compiles to a line like
 `fluttering jagged, gritty metallic impact, bright airy character, 0.8s`, sent

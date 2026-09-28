@@ -30,7 +30,6 @@ body {
 
 @keyframes einkflash { 0%, 55% { filter: invert(1); } 100% { filter: invert(0); } }
 @keyframes blinkcur { 0%, 49% { opacity: 1; } 50%, 100% { opacity: 0; } }
-@keyframes rotatehint { 0%, 20% { transform: rotate(0deg); } 50%, 70% { transform: rotate(90deg); } 100% { transform: rotate(90deg); } }
 
 /* ---- device shell: landscape shape, played sideways on a phone ---- */
 
@@ -55,51 +54,6 @@ body {
 }
 
 .device.flash { animation: einkflash .35s step-end; }
-
-/* Portrait phones can't show the two-pane layout usefully — ask for a
-   rotate instead of cramming it in. Gated to narrow viewports so a tall
-   desktop window doesn't get mistaken for a phone. */
-.rotate-hint { display: none; }
-@media (orientation: portrait) and (max-width: 899px) {
-  .device { display: none; }
-  .rotate-hint {
-    display: flex;
-    position: fixed;
-    inset: 0;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    gap: 18px;
-    background: var(--page);
-    color: var(--ink);
-    text-align: center;
-    padding: 24px;
-  }
-}
-.rotate-phone {
-  width: 34px;
-  height: 56px;
-  border: 2px solid var(--ink);
-  border-radius: 8px;
-  position: relative;
-  animation: rotatehint 1.8s ease-in-out infinite;
-}
-.rotate-phone::after {
-  content: '';
-  position: absolute;
-  left: 50%;
-  bottom: 6px;
-  width: 4px;
-  height: 4px;
-  margin-left: -2px;
-  background: var(--ink);
-  border-radius: 50%;
-}
-.rotate-text {
-  font: 600 11px var(--mono);
-  letter-spacing: 1.5px;
-  line-height: 1.9;
-}
 
 /* ---- masthead ---- */
 
@@ -296,7 +250,7 @@ body {
 /* On a short landscape phone the column is proportionally wider, so narrow the
    sketch pane (keeps the square's mat small) and cap the pad size so the whole
    right column (8 pads + pitch + transport) still fits without scrolling. */
-@media (max-height: 440px) {
+@media (max-height: 440px), (orientation: portrait) and (max-width: 440px) {
   .pane-sketch { flex: 0.4; }
   .pad-grid { justify-items: center; }
   .pad { width: min(100%, 84px); }
@@ -469,7 +423,12 @@ body {
    so one upward flick collapses the browser bars and the app snaps to fill
    the screen. */
 
-@media (orientation: landscape) and (max-height: 560px) {
+/* The stage's own width and height. On a landscape phone they are the
+   viewport's; on an upright phone, where the whole device is turned a quarter
+   turn (see the end of the file), they are the viewport's swapped. Every
+   size in this block that used to read vw or vh reads these instead. */
+@media (orientation: landscape) and (max-height: 560px), (orientation: portrait) and (max-width: 899px) {
+  :root { --sw: 100vw; --sh: 100dvh; }
 
   html {
     height: auto;
@@ -496,7 +455,7 @@ body {
   .device {
     position: sticky;
     top: 0;
-    height: 100dvh;
+    height: var(--sh);
     max-width: none;
     max-height: none;
     padding-left: max(7px, env(safe-area-inset-left));
@@ -533,9 +492,9 @@ body {
      via aspect-ratio: a grid track can't hand an intrinsic width back to the
      item that's supposed to define it, and engines disagree about what to do
      with that. The vw cap guarantees the three columns always fit. */
-  .paper-wrap { flex: none; height: 100%; width: 38vw; aspect-ratio: auto; }
+  .paper-wrap { flex: none; height: 100%; width: calc(.38 * var(--sw)); aspect-ratio: auto; }
   @supports (height: 1cqh) {
-    .paper-wrap { width: min(calc(100cqh - 2px), 42vw); }
+    .paper-wrap { width: min(calc(100cqh - 2px), calc(.42 * var(--sw))); }
   }
   /* fixed rail — wide enough for UNDO/CLR in any fallback font, no wider */
   .ink-row {
@@ -609,7 +568,7 @@ body {
     grid-row: 1 / -1;
     margin: 0;
     min-height: 0;
-    width: 20vw;
+    width: calc(.2 * var(--sw));
     grid-template-columns: repeat(2, minmax(0, 1fr));
     grid-template-rows: repeat(4, auto);
     gap: var(--pad-gap);
@@ -617,7 +576,7 @@ body {
     justify-items: stretch;
   }
   @supports (height: 1cqh) {
-    .pad-grid { width: min(calc(2 * var(--pad-w) + var(--pad-gap)), 24vw); }
+    .pad-grid { width: min(calc(2 * var(--pad-w) + var(--pad-gap)), calc(.24 * var(--sw))); }
   }
   .pad { width: auto; min-height: 0; border-radius: 8px; }
   .pad-board { aspect-ratio: 1; flex: none; }
@@ -661,6 +620,35 @@ body {
   .fader-label { display: none; }
   .fader { height: 22px; }
   .fader-value { width: 20px; font-size: 8px; }
+}
+
+/* ---- an upright phone: the whole device turned a quarter turn ----
+   Tink-on is landscape-shaped. Rather than ask for a rotation, the device is
+   drawn sideways across an upright phone as one piece, whatever the rotation
+   lock says: turned clockwise, so the phone's top is the device's left. The
+   stage is the viewport with its sides swapped, and the safe areas follow the
+   turn — the notch is now on the left, the home indicator on the right. */
+@media (orientation: portrait) and (max-width: 899px) {
+  :root { --sw: 100dvh; --sh: 100vw; }
+  html, body { height: 100%; overflow: hidden; }
+  body { display: block; min-height: 0; }
+  body::after { display: none; }
+  .device {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: var(--sw);
+    height: var(--sh);
+    transform: rotate(90deg) translateY(-100%);
+    transform-origin: top left;
+    padding-left: max(7px, env(safe-area-inset-top));
+    padding-right: max(7px, env(safe-area-inset-bottom));
+    padding-bottom: max(5px, env(safe-area-inset-left));
+    padding-top: max(0px, env(safe-area-inset-right));
+  }
+  /* The ribbon stays as it is: at the phone's right edge it hangs on the
+     turned device's top edge, and its lettering already runs the way the
+     turned device's does. */
 }
 
 /* Awwwards honoree ribbon — pinned to the right edge, vertically centred.
