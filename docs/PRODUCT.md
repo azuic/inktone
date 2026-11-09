@@ -189,3 +189,15 @@ sounding, since Tone nodes aren't garbage-collected like bare Web Audio nodes.
 - Multi-touch simultaneous pad playing
 - Multiple bars, tempo-synced pad durations, or step subdivisions finer than
   16ths — the loop is a single quantized 16-step bar
+
+
+## Native iOS / iPadOS layout
+
+The native instrument has eight pads (P1–P8) on iPhone in a 4×2 grid, and twelve
+pads (P1–P12) on iPad in a 4×3 grid, including narrower iPad windows.
+The sketch and pad drawing fields share an aspect ratio solved from the available
+space, so both panes fill their height above the ink/prompt and transport controls.
+Portrait iPad windows stack the full-width sketch above the same twelve-pad grid.
+Existing eight-pad saved kits expand to twelve slots, preserving their sounds,
+pitch settings and recorded steps. iPhone generation and playback use only its
+eight visible slots; any saved iPad slots remain preserved.

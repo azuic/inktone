@@ -1,0 +1,4 @@
+// Approved app identity and Apple Developer team.
+TINKON_BUNDLE_ID = com.tinkon.app
+DEVELOPMENT_TEAM = 9PFHA8HVMX
+CODE_SIGN_STYLE = Automatic

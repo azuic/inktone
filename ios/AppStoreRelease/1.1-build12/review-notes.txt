@@ -1,0 +1,9 @@
+No account, login, subscription or purchase is required.
+
+On iPhone, hold the device in landscape. iPhone has eight pads in a 4×2 grid; iPad has twelve pads in a 4×3 grid and also supports portrait. Select an ink below the sketch, draw on the paper and press GENERATE to fill a pad. Tap pads to play. Press PLAY and tap pads to record hits into the repeating 16-step bar. Tap a filled step to erase its recorded hits. Select a pad to adjust pitch or use the share button beside Settings to export a WAV. The kit saves automatically on this device.
+
+AI + SYNTH is selected for new installs. The first AI generation presents a consent panel before any AI request. Choose Use Offline Synth to test the complete local instrument without network access. The choice is remembered; SYNTH can also be selected in Settings. Selecting SYNTH clears saved AI permission. Enabling AI again asks permission before its next request.
+
+If the user chooses Use AI, only a derived sound description and requested duration are sent through Tink-on’s HTTPS endpoint to ElevenLabs. Drawing pixels and touch coordinates stay on the device. Settings and the consent panel explain provider retention and possible model improvement, and link the app-specific privacy policy. Network, quota and invalid-audio failures fall back to the local synth. Saved sounds, sequencing and WAV export work offline.
+
+Existing eight-pad kits expand without losing sounds, pitches or recorded steps. iPhone generation and playback remain limited to its eight visible slots. This build also includes the black icon with a white pixel wave. There is no microphone recording or background playback.

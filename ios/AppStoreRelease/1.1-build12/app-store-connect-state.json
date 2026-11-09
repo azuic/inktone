@@ -1,0 +1,33 @@
+{
+  "checkedDate": "2026-11-02",
+  "appId": "6822096857",
+  "liveVersion": "1.0",
+  "liveBuild": "11",
+  "latestUploadedBuild": "12",
+  "draftVersion": "1.1",
+  "draftStatus": "Prepare for Submission",
+  "metadataSaved": [
+    "promotionalText",
+    "description",
+    "whatsNew",
+    "reviewNotes"
+  ],
+  "plannedBuild": "12",
+  "binaryUploaded": true,
+  "newScreenshotsUploaded": false,
+  "submittedForReview": false,
+  "draftUrl": "https://appstoreconnect.apple.com/apps/6822096857/distribution/ios/version/inflight",
+  "screenshot": "app-store-connect-draft.jpg",
+  "screenshotDecision": "Keep existing App Store screenshot previews (user requested 2026-11-02)",
+  "binaryUploadAuthorized": true,
+  "automaticSigningAuthorized": true,
+  "signingAuthorizationDate": "2026-11-02",
+  "uploadDate": "2026-11-02",
+  "uploadEvidence": "upload-complete.png",
+  "processingStatus": "Complete",
+  "testFlightStatus": "Ready to Submit",
+  "buildAttachedToDraft": "12",
+  "buildId": "d8c93daa-84c7-4ae1-bc05-4af307b6bbd5",
+  "draftSaved": true,
+  "finalEvidence": "build-12-attached.jpg"
+}

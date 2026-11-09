@@ -1,0 +1,10 @@
+{
+  "ipa": "ios/build/AppStore-1.1-build12/TinkOn.ipa",
+  "bytes": 715527,
+  "sha256": "a44c1f8f967b568050bd24fd944c3257200e30bd1fbde5e18bfb568878341606",
+  "version": "1.1",
+  "build": "12",
+  "bundleId": "com.tinkon.app",
+  "distribution": "App Store Connect",
+  "uploaded": false
+}

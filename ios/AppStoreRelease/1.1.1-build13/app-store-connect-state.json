@@ -1,0 +1,42 @@
+{
+  "checkedDate": "2026-11-05",
+  "appId": "6822096857",
+  "liveVersion": "1.1",
+  "liveBuild": "12",
+  "draftVersion": "1.1.1",
+  "localArchiveBuild": "13",
+  "uploadedBuild": "14",
+  "buildId": "bbc08f16-3985-49fa-8f64-8c0429401288",
+  "binaryUploaded": true,
+  "processingStatus": "Complete",
+  "draftUrl": "https://appstoreconnect.apple.com/apps/6822096857/distribution/ios/version/inflight",
+  "existingIPhoneScreenshotRetained": false,
+  "existingIPadScreenshotRetained": true,
+  "submittedForReview": false,
+  "uploadEvidence": "upload-complete.png",
+  "testFlightStatus": "Ready to Submit",
+  "buildAttachedToDraft": "14",
+  "draftSaved": true,
+  "draftAssets": {
+    "iPhoneScreenshot": {
+      "file": "store-assets/01-iPhone-landscape.png",
+      "evidence": "iphone-placement.jpg",
+      "assetId": "78c00019-6a0e-8fd9-8020-4aad76a920bd",
+      "processingStatus": "Processing"
+    },
+    "productPageHeader": {
+      "file": "store-assets/03-App-Store-header.png",
+      "evidence": "header-placement.jpg",
+      "assetId": "cac00019-6a0e-8fd9-8008-fb5672bb53da",
+      "processingStatus": "Processing"
+    },
+    "searchResults": {
+      "file": "store-assets/04-App-Store-search.png",
+      "evidence": "search-placement.jpg",
+      "assetId": "ab800019-6a0e-8fd9-803f-fbe565cb6ab2",
+      "processingStatus": "Processing"
+    }
+  },
+  "finalEvidence": "build-14-attached.jpg",
+  "assetProcessingEvidence": "asset-library-status.jpg"
+}

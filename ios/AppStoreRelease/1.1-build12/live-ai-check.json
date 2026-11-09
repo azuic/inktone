@@ -1,0 +1,15 @@
+{
+  "status": 200,
+  "mimeType": "audio/mpeg",
+  "bytes": 8820,
+  "requestedDuration": 0.5,
+  "elapsedSeconds": 2.05,
+  "syntheticTestPrompt": true,
+  "nativeDecode": {
+    "channels": 1,
+    "frames": 23040,
+    "nativeDecoderPassed": true,
+    "peak": 0.6615997552871704,
+    "sampleRate": 48000
+  }
+}

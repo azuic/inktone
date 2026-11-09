@@ -1,0 +1,50 @@
+[
+  {
+    "file": "01-iphone-instrument.jpg",
+    "width": 2622,
+    "height": 1206,
+    "device": "iPhone 17 Pro",
+    "slot": "iPhone Dynamic Island medium",
+    "source": "Final 1.1 (12) native Simulator capture"
+  },
+  {
+    "file": "02-iphone-sequencer.jpg",
+    "width": 2622,
+    "height": 1206,
+    "device": "iPhone 17 Pro",
+    "slot": "iPhone Dynamic Island medium",
+    "source": "Final 1.1 (12) native Simulator capture"
+  },
+  {
+    "file": "03-iphone-ai-choice.jpg",
+    "width": 2622,
+    "height": 1206,
+    "device": "iPhone 17 Pro",
+    "slot": "iPhone Dynamic Island medium",
+    "source": "Final 1.1 (12) native Simulator capture"
+  },
+  {
+    "file": "04-ipad-13-landscape.jpg",
+    "width": 2752,
+    "height": 2064,
+    "device": "iPad Pro 13-inch (M5)",
+    "slot": "iPad 13-inch",
+    "source": "Final 1.1 (12) native Simulator capture"
+  },
+  {
+    "file": "05-ipad-13-portrait.jpg",
+    "width": 2064,
+    "height": 2752,
+    "device": "iPad Pro 13-inch (M5)",
+    "slot": "iPad 13-inch",
+    "source": "Final 1.1 (12) native Simulator capture"
+  },
+  {
+    "file": "06-ipad-13-ai-choice.jpg",
+    "width": 2752,
+    "height": 2064,
+    "device": "iPad Pro 13-inch (M5)",
+    "slot": "iPad 13-inch",
+    "source": "Final 1.1 (12) native Simulator capture"
+  }
+]

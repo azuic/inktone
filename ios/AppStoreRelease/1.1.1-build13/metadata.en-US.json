@@ -1,0 +1,18 @@
+{
+  "name": "Tink-on",
+  "subtitle": "Sketch a sound. Play a beat.",
+  "promotionalText": "Turn a few lines of ink into an instrument. Draw, generate, and tap your own sounds into a repeating beat.",
+  "description": "Sketch a sound with Tink-on, a drawing instrument and sampler.\n\nChoose a risograph ink and draw a shape. Its height becomes pitch, its length sets duration, and its speed and corners shape the texture. Generate a sound, play it on a pad, then tap it into a repeating beat.\n\n- Four ink voices: resonant tones, grainy textures, metallic impacts and deep sub drones.\n- Eight pads on iPhone and twelve on iPad, with pixel previews of your drawings.\n- Pitch each pad up or down an octave.\n- Record a beat into a 16-step loop at 40–240 BPM.\n- Return to your current kit after closing the app.\n- Share individual sounds as WAV files.\n\nLocal synthesis, sequencing and WAV export work offline. Optional AI uses ElevenLabs through Tink-on’s server and requires internet. AI + SYNTH is selected for new installs and asks permission before the first AI request. Use Offline Synth selects local generation. AI failures fall back to local synthesis. No account, ads or microphone access. On iPhone, use landscape orientation.",
+  "keywords": "sampler,sketch,synth,beat,music,drum,sequencer,sound,draw,instrument",
+  "whatsNew": "A new app icon inspired by the four inks in Tink-on.",
+  "supportUrl": "https://tinkon.zui.ooo/support.html",
+  "marketingUrl": "https://tinkon.zui.ooo",
+  "privacyUrl": "https://tinkon.zui.ooo/privacy.html",
+  "copyright": "2026 Zui Chen",
+  "locale": "en-US",
+  "version": "1.1.1",
+  "build": "14",
+  "bundleId": "com.tinkon.app",
+  "appId": "6822096857",
+  "reviewNotes": "Version 1.1.1 updates the app icon to the four-ink sketch on dotted paper. App behavior is unchanged from version 1.1.\n\nNo account, login, subscription or purchase is required.\n\nOn iPhone, hold the device in landscape. iPhone has eight pads in a 4×2 grid; iPad has twelve pads in a 4×3 grid and also supports portrait. Select an ink below the sketch, draw on the paper and press GENERATE to fill a pad. Tap pads to play. Press PLAY and tap pads to record hits into the repeating 16-step bar. Tap a filled step to erase its recorded hits. Select a pad to adjust pitch or use the share button beside Settings to export a WAV. The kit saves automatically on this device.\n\nAI + SYNTH is selected for new installs. The first AI generation presents a consent panel before any AI request. Choose Use Offline Synth to test the complete local instrument without network access. The choice is remembered; SYNTH can also be selected in Settings. Selecting SYNTH clears saved AI permission. Enabling AI again asks permission before its next request.\n\nIf the user chooses Use AI, only a derived sound description and requested duration are sent through Tink-on’s HTTPS endpoint to ElevenLabs. Drawing pixels and touch coordinates stay on the device. Settings and the consent panel explain provider retention and possible model improvement, and link the app-specific privacy policy. Network, quota and invalid-audio failures fall back to the local synth. Saved sounds, sequencing and WAV export work offline.\n\nExisting eight-pad kits expand without losing sounds, pitches or recorded steps. iPhone generation and playback remain limited to its eight visible slots. There is no microphone recording or background playback."
+}

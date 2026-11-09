@@ -1,0 +1,8 @@
+A refreshed instrument layout and a new pixel-wave icon.
+
+- Twelve pads on iPad; eight pads on iPhone.
+- Matching sketch and pad proportions, with better use of the screen.
+- A slimmer pitch slider and more consistent controls.
+- Updated Settings and a compact AI chooser.
+
+Your saved sounds, pitches and recorded beats carry over.

@@ -1,0 +1,55 @@
+{
+  "version": "1.1.1",
+  "build": "13",
+  "bundleId": "com.tinkon.app",
+  "files": [
+    {
+      "path": "ios/Config.xcconfig",
+      "sha256": "106ec707fd1f1af2730bcfe90ca16fa5eedaae345890026714e5587c5380a027"
+    },
+    {
+      "path": "ios/TinkOn/Assets.xcassets/AppIcon.appiconset/AppIcon.png",
+      "sha256": "b83699f96033cb360109064209993524d0b20d5c39a48a31db61a7c9503bb6fd"
+    },
+    {
+      "path": "ios/TinkOn/AudioEngine.swift",
+      "sha256": "7b99c7725482d5296f8b54944dc70e562ed886451c42c3f38efe01183bb78d37"
+    },
+    {
+      "path": "ios/TinkOn/Info.plist",
+      "sha256": "12949aba0e4d813656796ca1f83af51b8a80d3da9ed1c66f103d61344552fd9a"
+    },
+    {
+      "path": "ios/TinkOn/Instrument.swift",
+      "sha256": "977c1ef73b4c91afe4753eec5959e8089eff1489fb71743780632c143bd5da1e"
+    },
+    {
+      "path": "ios/TinkOn/InstrumentView.swift",
+      "sha256": "848be24f1ea02f4c8b23db925d6e98aac3ecfe7c982671fe44ea7c5518b873c4"
+    },
+    {
+      "path": "ios/TinkOn/Models.swift",
+      "sha256": "de565bfc5868722be60706e15ae320eaa9f855a5e967b5f75cec3aef9373c436"
+    },
+    {
+      "path": "ios/TinkOn/PrivacyInfo.xcprivacy",
+      "sha256": "19eda63d087b091faedd668a41edc12a84a5dc1f09872f2cba431a515d6602d0"
+    },
+    {
+      "path": "ios/TinkOn/SketchView.swift",
+      "sha256": "c7aca0b6ead9f4769e05338ecd2880771b566868d4f346cdd8df8ddc6909fa9c"
+    },
+    {
+      "path": "ios/TinkOn/SoundService.swift",
+      "sha256": "74ecc26d179bc1faa2fe6e4127bc53ecb7f2eefae604e7df0a315d9a1c2342bb"
+    },
+    {
+      "path": "ios/TinkOn/TinkOnApp.swift",
+      "sha256": "580739445dbbaaf5634900522021153e1c8774d806cad31d87660001c49b851f"
+    },
+    {
+      "path": "ios/TinkOn.xcodeproj/project.pbxproj",
+      "sha256": "9d06971031b87e1e260f69c8005f7019ac28e2623e5803abd4207342f8198233"
+    }
+  ]
+}

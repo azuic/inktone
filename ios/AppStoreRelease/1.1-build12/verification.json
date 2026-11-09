@@ -1,0 +1,74 @@
+{
+  "iphone": {
+    "devicesAndConfigurations": [
+      {
+        "device": {
+          "architecture": "arm64",
+          "deviceId": "AB512AA6-1B59-4ACA-B65C-720326DC58DD",
+          "deviceName": "TinkOn UI Review iPhone",
+          "modelName": "iPhone 17 Pro",
+          "osBuildNumber": "23C54",
+          "osVersion": "26.2",
+          "platform": "iOS Simulator"
+        },
+        "expectedFailures": 0,
+        "failedTests": 0,
+        "passedTests": 13,
+        "skippedTests": 0,
+        "testPlanConfiguration": {
+          "configurationId": "1",
+          "configurationName": "Test Scheme Action"
+        }
+      }
+    ],
+    "environmentDescription": "TinkOn \u00b7 Built with macOS 26.3.1",
+    "expectedFailures": 0,
+    "failedTests": 0,
+    "finishTime": 1793516812.193,
+    "passedTests": 13,
+    "result": "Passed",
+    "skippedTests": 0,
+    "startTime": 1793516626.43,
+    "statistics": [],
+    "testFailures": [],
+    "title": "Test - TinkOn",
+    "topInsights": [],
+    "totalTestCount": 13
+  },
+  "ipad13": {
+    "devicesAndConfigurations": [
+      {
+        "device": {
+          "architecture": "arm64",
+          "deviceId": "B051F543-D41F-40B5-B9AF-EDBEE77F96A0",
+          "deviceName": "TinkOn App Store iPad 13",
+          "modelName": "iPad Pro 13-inch (M5)",
+          "osBuildNumber": "23C54",
+          "osVersion": "26.2",
+          "platform": "iOS Simulator"
+        },
+        "expectedFailures": 0,
+        "failedTests": 0,
+        "passedTests": 4,
+        "skippedTests": 0,
+        "testPlanConfiguration": {
+          "configurationId": "1",
+          "configurationName": "Test Scheme Action"
+        }
+      }
+    ],
+    "environmentDescription": "TinkOn \u00b7 Built with macOS 26.3.1",
+    "expectedFailures": 0,
+    "failedTests": 0,
+    "finishTime": 1793517431.302,
+    "passedTests": 4,
+    "result": "Passed",
+    "skippedTests": 0,
+    "startTime": 1793517193.552,
+    "statistics": [],
+    "testFailures": [],
+    "title": "Test - TinkOn",
+    "topInsights": [],
+    "totalTestCount": 4
+  }
+}

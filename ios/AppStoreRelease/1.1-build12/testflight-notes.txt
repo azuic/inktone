@@ -1,0 +1,5 @@
+Please test the refreshed instrument layout, the new icon, and the twelve-pad iPad bank. iPhone keeps eight pads.
+
+Check drawing and Undo/Clear, local generation, pad playback, pitch from −12 to +12, recording and erasing steps, tempo, cold relaunch and WAV sharing. On iPad, check both portrait and landscape. Existing sounds and recorded beats should carry over.
+
+AI is optional. New installs ask permission before the first AI request; Use Offline Synth chooses local generation and remembers that choice. When testing AI, check the permission panel, successful generation when available, and local fallback if the service is unavailable.

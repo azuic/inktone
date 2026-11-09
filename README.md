@@ -59,6 +59,9 @@ ticks show recorded steps; click a tick to erase it.
 
 - [Product doc](docs/PRODUCT.md)
 - [Deployment plan](docs/DEPLOYMENT.md)
+- [Native iOS app](ios/README.md) — SwiftUI, UIKit drawing and AVAudioEngine;
+  open `ios/TinkOn.xcodeproj` in Xcode to run on iPhone or iPad.
+- [iOS release checklist and listing](docs/IOS-RELEASE.md)
 
 ## Stack
 
